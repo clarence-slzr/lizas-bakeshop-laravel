@@ -1,27 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-    @php
-        use App\Models\CashierShift;
-        use Illuminate\Support\Facades\Auth;
-
-        $userId = Auth::id();
-        $activeShift = CashierShift::where('user_id', $userId)
-            ->whereNull('shift_end')
-            ->latest('id')
-            ->first();
-
-        $shiftHistory = CashierShift::where('user_id', $userId)
-            ->orderBy('id', 'desc')
-            ->limit(10)
-            ->get();
-
-        $totalShifts = CashierShift::where('user_id', $userId)->count();
-        $totalSales = CashierShift::where('user_id', $userId)->sum('total_sales');
-        $avgPerShift = $totalShifts > 0 ? $totalSales / $totalShifts : 0;
-        $bestShift = CashierShift::where('user_id', $userId)->max('total_sales') ?? 0;
-    @endphp
-
     <div class="shift-container">
 
         <!-- ============ PAGE HEADER ============ -->
@@ -44,12 +23,26 @@
         <!-- ============ FLASH MESSAGES ============ -->
         @if(session('success'))
             <div class="alert alert-success">
-                <i class="fas fa-check-circle"></i> {{ session('success') }}
+                <i class="fas fa-check-circle"></i>
+                @if(session('success') === 'started')
+                    Shift started successfully!
+                @elseif(session('success') === 'ended')
+                    Shift ended successfully!
+                @else
+                    {{ session('success') }}
+                @endif
             </div>
         @endif
         @if(session('error'))
             <div class="alert alert-error">
-                <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+                <i class="fas fa-exclamation-circle"></i>
+                @if(session('error') === 'already_active')
+                    You already have an active shift.
+                @elseif(session('error') === 'no_active')
+                    No active shift found.
+                @else
+                    {{ session('error') }}
+                @endif
             </div>
         @endif
 
@@ -87,10 +80,20 @@
                                 </div>
                                 <div class="active-stat-divider"></div>
                                 <div class="active-stat-item">
-                                    <span class="active-stat-label">Duration</span>
-                                    <span class="active-stat-value">
-                                        {{ \Carbon\Carbon::parse($activeShift->shift_start)->diffForHumans(null, true) }}
-                                    </span>
+                                    <span class="active-stat-label">Live Sales</span>
+                                    <span class="active-stat-value">₱{{ number_format($liveTotal ?? 0, 2) }}</span>
+                                </div>
+                            </div>
+
+                            <div class="active-stats">
+                                <div class="active-stat-item">
+                                    <span class="active-stat-label">Live Orders</span>
+                                    <span class="active-stat-value">{{ number_format($liveOrders ?? 0) }}</span>
+                                </div>
+                                <div class="active-stat-divider"></div>
+                                <div class="active-stat-item">
+                                    <span class="active-stat-label">Expected Cash</span>
+                                    <span class="active-stat-value">₱{{ number_format($expectedCash ?? 0, 2) }}</span>
                                 </div>
                             </div>
 
@@ -104,6 +107,14 @@
                                             placeholder="0.00" required autofocus>
                                     </div>
                                     <small class="form-help">Bilangin ang laman ng cash drawer para sa accurate reconciliation.</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="shift_notes">Notes (Optional)</label>
+                                    <div class="input-with-icon">
+                                        <textarea name="shift_notes" id="shift_notes" rows="2" placeholder="Anumang notes para sa shift na ito..."
+                                            style="width: 100%; padding: 0.75rem; border: 1.5px solid #E3DCD0; border-radius: 0.5rem; font-family: inherit; font-size: 0.9rem; resize: vertical;"></textarea>
+                                    </div>
                                 </div>
 
                                 <button type="submit" class="btn-action btn-end"
@@ -161,7 +172,7 @@
                             <i class="fas fa-clock-rotate-left"></i>
                         </div>
                         <div class="overview-info">
-                            <span class="overview-value">{{ number_format($totalShifts) }}</span>
+                            <span class="overview-value">{{ number_format($totalShifts ?? 0) }}</span>
                             <span class="overview-label">Total Shifts</span>
                         </div>
                     </div>
@@ -171,7 +182,7 @@
                             <i class="fas fa-peso-sign"></i>
                         </div>
                         <div class="overview-info">
-                            <span class="overview-value">₱{{ number_format($totalSales, 2) }}</span>
+                            <span class="overview-value">₱{{ number_format($totalSalesAll ?? 0, 2) }}</span>
                             <span class="overview-label">Total Sales</span>
                         </div>
                     </div>
@@ -181,7 +192,7 @@
                             <i class="fas fa-chart-line"></i>
                         </div>
                         <div class="overview-info">
-                            <span class="overview-value">₱{{ number_format($avgPerShift, 2) }}</span>
+                            <span class="overview-value">₱{{ number_format($avgSalesPerShift ?? 0, 2) }}</span>
                             <span class="overview-label">Avg Per Shift</span>
                         </div>
                     </div>
@@ -191,7 +202,7 @@
                             <i class="fas fa-trophy"></i>
                         </div>
                         <div class="overview-info">
-                            <span class="overview-value">₱{{ number_format($bestShift, 2) }}</span>
+                            <span class="overview-value">₱{{ number_format($bestShift ?? 0, 2) }}</span>
                             <span class="overview-label">Best Shift</span>
                         </div>
                     </div>
@@ -210,7 +221,7 @@
                         <h3>Shift History</h3>
                         <p>Recent shifts you've completed</p>
                     </div>
-                    <span class="history-badge">Last {{ $shiftHistory->count() }} shift{{ $shiftHistory->count() != 1 ? 's' : '' }}</span>
+                    <span class="history-badge">Last {{ $shifts->count() }} shift{{ $shifts->count() != 1 ? 's' : '' }}</span>
                 </div>
             </div>
 
@@ -229,16 +240,16 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @if($shiftHistory->count() > 0)
-                            @foreach($shiftHistory as $shift)
+                        @if($shifts->count() > 0)
+                            @foreach($shifts as $shift)
                                 @php
                                     $start = \Carbon\Carbon::parse($shift->shift_start);
                                     $end = $shift->shift_end ? \Carbon\Carbon::parse($shift->shift_end) : null;
 
-                                    // Calculate duration with better formatting (handles seconds)
+                                    // Duration with seconds
                                     $durationText = null;
                                     if ($end) {
-                                        $totalSeconds = $end->diffInSeconds($start);
+                                        $totalSeconds = abs($end->diffInSeconds($start));
                                         $hours = floor($totalSeconds / 3600);
                                         $minutes = floor(($totalSeconds % 3600) / 60);
                                         $seconds = $totalSeconds % 60;
@@ -252,9 +263,12 @@
                                         }
                                     }
 
-                                    $variance = ($end && $shift->ending_cash !== null && $shift->starting_cash !== null)
-                                        ? $shift->ending_cash - $shift->starting_cash - ($shift->total_sales ?? 0)
-                                        : null;
+                                    // Variance: actual vs expected
+                                    $variance = null;
+                                    if ($end && $shift->ending_cash !== null && $shift->starting_cash !== null) {
+                                        $expectedCashShift = ($shift->starting_cash ?? 0) + ($shift->total_sales ?? 0);
+                                        $variance = ($shift->ending_cash ?? 0) - $expectedCashShift;
+                                    }
                                 @endphp
                                 <tr>
                                     <td>
@@ -531,7 +545,7 @@
             padding: 1.25rem;
             background: #FDF8F0;
             border-radius: 0.75rem;
-            margin-bottom: 1.75rem;
+            margin-bottom: 1rem;
             border: 1px solid #F0EADC;
         }
 
