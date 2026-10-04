@@ -19,155 +19,159 @@
     <div class="min-h-screen bg-gray-100" style="display: flex;">
 
         {{-- ============================ --}}
-        {{-- SIDEBAR --}}
+        {{-- SIDEBAR (LALABAS LANG KAPAG NAKA-LOGIN) --}}
         {{-- ============================ --}}
-        <aside class="sidebar">
-            {{-- BRAND --}}
-            <div class="sidebar-brand">
-                <div class="brand-icon">
-                    <img src="{{ asset('images/liza-logo.png') }}" alt="Liza's Bakeshop Logo">
+        @auth
+            <aside class="sidebar">
+                {{-- BRAND --}}
+                <div class="sidebar-brand">
+                    <div class="brand-icon">
+                        <img src="{{ asset('images/liza-logo.png') }}" alt="Liza's Bakeshop Logo">
+                    </div>
+                    <div class="brand-info">
+                        <h1>Liza's Bakeshop</h1>
+                        <p>Est. 1989 | San Miguel</p>
+                    </div>
                 </div>
-                <div class="brand-info">
-                    <h1>Liza's Bakeshop</h1>
-                    <p>Est. 1989 | San Miguel</p>
-                </div>
-            </div>
 
-            {{-- NAV --}}
-            <nav class="sidebar-nav">
+                {{-- NAV --}}
+                <nav class="sidebar-nav">
 
-                <a href="{{ route('dashboard') }}"
-                    class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Dashboard</span>
-                </a>
+                    <a href="{{ route('dashboard') }}"
+                        class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Dashboard</span>
+                    </a>
 
-                @if(auth()->user()->isAdmin())
-                    <div class="nav-section">
-                        <span class="nav-section-title">Management</span>
+                    @if(auth()->check() && auth()->user()->isAdmin())
+                        <div class="nav-section">
+                            <span class="nav-section-title">Management</span>
 
-                        <a href="{{ route('admin.charts') }}"
-                            class="nav-item {{ request()->routeIs('admin.charts') ? 'active' : '' }}">
-                            <i class="fas fa-chart-pie"></i>
-                            <span>Analytics</span>
-                        </a>
+                            <a href="{{ route('admin.charts') }}"
+                                class="nav-item {{ request()->routeIs('admin.charts') ? 'active' : '' }}">
+                                <i class="fas fa-chart-pie"></i>
+                                <span>Analytics</span>
+                            </a>
 
-                        <a href="{{ route('admin.products.index') }}"
-                            class="nav-item {{ request()->routeIs('admin.products.*') ? 'active' : '' }}">
-                            <i class="fas fa-bread-slice"></i>
-                            <span>Products</span>
-                        </a>
+                            <a href="{{ route('admin.products.index') }}"
+                                class="nav-item {{ request()->routeIs('admin.products.*') ? 'active' : '' }}">
+                                <i class="fas fa-bread-slice"></i>
+                                <span>Products</span>
+                            </a>
 
-                        <a href="{{ route('admin.inventory') }}"
-                            class="nav-item {{ request()->routeIs('admin.inventory') ? 'active' : '' }}">
-                            <i class="fas fa-boxes-stacked"></i>
-                            <span>Inventory</span>
-                        </a>
+                            <a href="{{ route('admin.inventory') }}"
+                                class="nav-item {{ request()->routeIs('admin.inventory') ? 'active' : '' }}">
+                                <i class="fas fa-boxes-stacked"></i>
+                                <span>Inventory</span>
+                            </a>
 
-                        <a href="{{ route('orders.index') }}"
-                            class="nav-item {{ request()->routeIs('orders.index') ? 'active' : '' }}">
-                            <i class="fas fa-receipt"></i>
-                            <span>Orders</span>
-                        </a>
+                            <a href="{{ route('orders.index') }}"
+                                class="nav-item {{ request()->routeIs('orders.index') ? 'active' : '' }}">
+                                <i class="fas fa-receipt"></i>
+                                <span>Orders</span>
+                            </a>
 
-                        <a href="{{ route('admin.sales-report') }}"
-                            class="nav-item {{ request()->routeIs('admin.sales-report') ? 'active' : '' }}">
-                            <i class="fas fa-bullhorn"></i>
-                            <span>Sales Report</span>
-                        </a>
+                            <a href="{{ route('admin.sales-report') }}"
+                                class="nav-item {{ request()->routeIs('admin.sales-report') ? 'active' : '' }}">
+                                <i class="fas fa-bullhorn"></i>
+                                <span>Sales Report</span>
+                            </a>
 
-                        <a href="{{ route('admin.users.index') }}"
-                            class="nav-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
-                            <i class="fas fa-users"></i>
-                            <span>Manage Users</span>
-                        </a>
-                    </div>
-                @endif
-
-                @if(auth()->user()->isCashier())
-                    <div class="nav-section">
-                        <span class="nav-section-title">Point of Sale</span>
-
-                        <a href="{{ route('cashier.pos') }}"
-                            class="nav-item {{ request()->routeIs('cashier.pos') ? 'active' : '' }}">
-                            <i class="fas fa-basket-shopping"></i>
-                            <span>Create Order</span>
-                        </a>
-                    </div>
-
-                    <div class="nav-section">
-                        <span class="nav-section-title">Shift</span>
-
-                        <a href="{{ route('cashier.shift') }}"
-                            class="nav-item {{ request()->routeIs('cashier.shift*') ? 'active' : '' }}">
-                            <i class="fas fa-user-clock"></i>
-                            <span>Cashier Shift</span>
-                        </a>
-                    </div>
-
-                    <div class="nav-section">
-                        <span class="nav-section-title">Transactions</span>
-
-                        <a href="{{ route('cashier.order-history') }}"
-                            class="nav-item {{ request()->routeIs('cashier.order-history') ? 'active' : '' }}">
-                            <i class="fas fa-clock-rotate-left"></i>
-                            <span>Order History</span>
-                        </a>
-
-                        <a href="{{ route('cashier.refund') }}"
-                            class="nav-item {{ request()->routeIs('cashier.refund*') ? 'active' : '' }}">
-                            <i class="fas fa-rotate-left"></i>
-                            <span>Refund</span>
-                        </a>
-                    </div>
-                @endif
-            </nav>
-
-            {{-- FOOTER --}}
-            <div class="sidebar-footer">
-                <div class="user-menu-container">
-                    <button type="button" class="user-chip" id="userMenuToggle" aria-haspopup="true"
-                        aria-expanded="false">
-                        <div class="user-avatar">
-                            <i class="fas fa-user-circle"></i>
+                            <a href="{{ route('admin.users.index') }}"
+                                class="nav-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+                                <i class="fas fa-users"></i>
+                                <span>Manage Users</span>
+                            </a>
                         </div>
-                        <div class="user-details">
-                            <span class="user-name">{{ auth()->user()->full_name ?? auth()->user()->username }}</span>
-                            <span
-                                class="user-role {{ auth()->user()->role == 'cashier' ? 'role-cashier' : 'role-admin' }}">
-                                {{ auth()->user()->role == 'admin' ? 'Administrator' : 'Cashier' }}
-                            </span>
-                        </div>
-                        <i class="fas fa-chevron-up user-menu-caret"></i>
-                    </button>
+                    @endif
 
-                    {{-- DROPDOWN MENU --}}
-                    <div class="user-menu-dropdown" id="userMenuDropdown">
-                        <a href="{{ route('profile.edit') }}" class="user-menu-item">
-                            <i class="fas fa-user-cog"></i>
-                            <span>Profile Settings</span>
-                        </a>
-                        <a href="{{ route('logout.confirm') }}" class="user-menu-item user-menu-item-danger">
-                            <i class="fas fa-sign-out-alt"></i>
-                            <span>Logout</span>
-                        </a>
+                    @if(auth()->check() && auth()->user()->isCashier())
+                        <div class="nav-section">
+                            <span class="nav-section-title">Point of Sale</span>
+
+                            <a href="{{ route('cashier.pos') }}"
+                                class="nav-item {{ request()->routeIs('cashier.pos') ? 'active' : '' }}">
+                                <i class="fas fa-basket-shopping"></i>
+                                <span>Create Order</span>
+                            </a>
+                        </div>
+
+                        <div class="nav-section">
+                            <span class="nav-section-title">Shift</span>
+
+                            <a href="{{ route('cashier.shift') }}"
+                                class="nav-item {{ request()->routeIs('cashier.shift*') ? 'active' : '' }}">
+                                <i class="fas fa-user-clock"></i>
+                                <span>Cashier Shift</span>
+                            </a>
+                        </div>
+
+                        <div class="nav-section">
+                            <span class="nav-section-title">Transactions</span>
+
+                            <a href="{{ route('cashier.order-history') }}"
+                                class="nav-item {{ request()->routeIs('cashier.order-history') ? 'active' : '' }}">
+                                <i class="fas fa-clock-rotate-left"></i>
+                                <span>Order History</span>
+                            </a>
+
+                            <a href="{{ route('cashier.refund') }}"
+                                class="nav-item {{ request()->routeIs('cashier.refund*') ? 'active' : '' }}">
+                                <i class="fas fa-rotate-left"></i>
+                                <span>Refund</span>
+                            </a>
+                        </div>
+                    @endif
+                </nav>
+
+                {{-- FOOTER --}}
+                <div class="sidebar-footer">
+                    <div class="user-menu-container">
+                        <button type="button" class="user-chip" id="userMenuToggle" aria-haspopup="true"
+                            aria-expanded="false">
+                            <div class="user-avatar">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <div class="user-details">
+                                <span class="user-name">{{ auth()->user()->full_name ?? auth()->user()->username }}</span>
+                                <span
+                                    class="user-role {{ auth()->user()->role == 'cashier' ? 'role-cashier' : 'role-admin' }}">
+                                    {{ auth()->user()->role == 'admin' ? 'Administrator' : 'Cashier' }}
+                                </span>
+                            </div>
+                            <i class="fas fa-chevron-up user-menu-caret"></i>
+                        </button>
+
+                        {{-- DROPDOWN MENU --}}
+                        <div class="user-menu-dropdown" id="userMenuDropdown">
+                            <a href="{{ route('profile.edit') }}" class="user-menu-item">
+                                <i class="fas fa-user-cog"></i>
+                                <span>Profile Settings</span>
+                            </a>
+                            <a href="{{ route('logout.confirm') }}" class="user-menu-item user-menu-item-danger">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Logout</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </aside>
+            </aside>
+        @endauth
 
         {{-- ============================ --}}
         {{-- MAIN CONTENT --}}
         {{-- ============================ --}}
-        <main style="flex: 1; margin-left: 280px; min-height: 100vh;">
+        <main style="flex: 1; {{ auth()->check() ? 'margin-left: 280px;' : '' }} min-height: 100vh;">
 
-            {{-- TOP HEADER --}}
-            <header class="top-header">
-                <div class="header-date">
-                    <i class="fas fa-calendar"></i>
-                    {{ date('l, F j, Y') }}
-                </div>
-            </header>
+            {{-- TOP HEADER (LALABAS LANG KAPAG NAKA-LOGIN) --}}
+            @auth
+                <header class="top-header">
+                    <div class="header-date">
+                        <i class="fas fa-calendar"></i>
+                        {{ date('l, F j, Y') }}
+                    </div>
+                </header>
+            @endauth
 
             {{-- PAGE CONTENT --}}
             <div style="padding: 1.5rem;">

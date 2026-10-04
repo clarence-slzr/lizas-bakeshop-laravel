@@ -89,6 +89,7 @@
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
+            padding: 1.5rem;
         }
 
         .profile-header-card {
@@ -253,54 +254,145 @@
         }
 
         .profile-form {
-            padding: 1.25rem;
+            padding: 1.5rem;
+        }
+
+        /* ============ IMPROVED FORM STYLING ============ */
+        .profile-form form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .profile-form .form-group,
+        .profile-form>form>div {
+            margin-bottom: 1.25rem !important;
+        }
+
+        .profile-form .form-group:last-child,
+        .profile-form>form>div:last-child {
+            margin-bottom: 0 !important;
+        }
+
+        .profile-form label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #2C2B26;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
         }
 
         .profile-form input[type="text"],
         .profile-form input[type="email"],
         .profile-form input[type="password"],
-        .profile-form input[type="file"] {
+        .profile-form input[type="tel"],
+        .profile-form input[type="file"],
+        .profile-form textarea,
+        .profile-form select {
             width: 100%;
-            padding: 0.6rem 0.75rem;
+            padding: 0.7rem 0.875rem;
             border: 1px solid #E3DCD0;
             border-radius: 8px;
             font-size: 0.85rem;
             font-family: inherit;
             color: #2C2B26;
             background: white;
+            transition: all 0.2s ease;
+            margin-top: 0.25rem;
         }
 
-        .profile-form input:focus {
+        .profile-form input:focus,
+        .profile-form textarea:focus,
+        .profile-form select:focus {
             outline: none;
             border-color: #576238;
             box-shadow: 0 0 0 3px rgba(87, 98, 56, 0.1);
         }
 
-        .profile-form label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #2C2B26;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: block;
-            margin-bottom: 0.35rem;
+        .profile-form input::placeholder,
+        .profile-form textarea::placeholder {
+            color: #B8B7B0;
         }
 
-        .profile-form button[type="submit"] {
+        /* Small helper text */
+        .profile-form small,
+        .profile-form .form-hint {
+            display: block;
+            font-size: 0.7rem;
+            color: #9E9D97;
+            margin-top: 0.35rem;
+        }
+
+        /* Success / Error messages */
+        .profile-form .alert,
+        .profile-form .text-green-600,
+        .profile-form .text-red-600 {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Submit button */
+        .profile-form button[type="submit"],
+        .profile-form .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
             background: linear-gradient(135deg, #7A8B4F, #576238);
             color: white;
             border: none;
-            padding: 0.65rem 1.25rem;
+            padding: 0.75rem 1.5rem;
             border-radius: 8px;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             font-weight: 600;
             cursor: pointer;
-            margin-top: 1rem;
+            transition: all 0.2s ease;
+            align-self: flex-start;
+            margin-top: 0.5rem;
         }
 
-        .profile-form button[type="submit"]:hover {
+        .profile-form button[type="submit"]:hover,
+        .profile-form .btn-primary:hover {
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(87, 98, 56, 0.3);
+        }
+
+        /* Danger button (delete) */
+        .profile-form .btn-danger,
+        .profile-form button[type="submit"].danger {
+            background: linear-gradient(135deg, #E8A594, #C5705A);
+        }
+
+        .profile-form .btn-danger:hover,
+        .profile-form button[type="submit"].danger:hover {
+            box-shadow: 0 4px 12px rgba(197, 112, 90, 0.3);
+        }
+
+        /* Checkbox / Radio in forms */
+        .profile-form input[type="checkbox"],
+        .profile-form input[type="radio"] {
+            width: auto;
+            margin-right: 0.5rem;
+        }
+
+        /* Disabled inputs */
+        .profile-form input:disabled {
+            background: #F0EADC;
+            cursor: not-allowed;
+        }
+
+        /* Form row (two columns) */
+        .profile-form .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+        }
+
+        @media (max-width: 640px) {
+            .profile-form .form-row {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 @endsection

@@ -2,127 +2,57 @@
 
 @section('content')
     @php
-        use App\Models\Product;
-        use Illuminate\Support\Facades\DB;
-
-        $page_title = 'Inventory';
-        $hide_page_title = true;
-
         // ============================================
-        // FILTERS & SORTING
+        // HELPER: buildURL (closure — hindi global function)
         // ============================================
-        $search = trim($_GET['search'] ?? '');
-        $filterCategory = trim($_GET['category'] ?? '');
-        $filterStock = trim($_GET['stock'] ?? '');
-        $sortBy = $_GET['sort'] ?? 'id_asc';
-
-        $query = Product::query();
-
-        if ($search !== '') {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'LIKE', "%$search%")
-                    ->orWhere('category', 'LIKE', "%$search%")
-                    ->orWhere('id', 'LIKE', "%$search%");
-            });
-        }
-        if ($filterCategory !== '') {
-            $query->where('category', $filterCategory);
-        }
-        if ($filterStock === 'low') {
-            $query->where('stock', '<', 10)->where('stock', '>', 0);
-        } elseif ($filterStock === 'out') {
-            $query->where('stock', 0);
-        } elseif ($filterStock === 'good') {
-            $query->where('stock', '>=', 10);
-        } elseif ($filterStock === 'critical') {
-            $query->where('stock', '<', 5);
-        }
-
-        $sortOptions = [
-            'id_asc' => ['id', 'ASC'],
-            'id_desc' => ['id', 'DESC'],
-            'name_asc' => ['name', 'ASC'],
-            'name_desc' => ['name', 'DESC'],
-            'stock_asc' => ['stock', 'ASC'],
-            'stock_desc' => ['stock', 'DESC'],
-            'value_asc' => [DB::raw('(price * stock)'), 'ASC'],
-            'value_desc' => [DB::raw('(price * stock)'), 'DESC']
-        ];
-        $sortOpt = $sortOptions[$sortBy] ?? ['id', 'ASC'];
-
-        // ============================================
-        // PAGINATION
-        // ============================================
-        $perPage = 15;
-        $page = isset($_GET['page']) && is_numeric($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
-        $offset = ($page - 1) * $perPage;
-
-        $totalProducts = $query->count();
-        $totalPages = ceil($totalProducts / $perPage);
-
-        $products = $query->orderBy($sortOpt[0], $sortOpt[1])->skip($offset)->take($perPage)->get();
-
-        // ============================================
-        // CATEGORIES FOR FILTER
-        // ============================================
-        $categories = Product::whereNotNull('category')
-            ->where('category', '!=', '')
-            ->distinct()
-            ->orderBy('category', 'asc')
-            ->pluck('category');
-
-        // ============================================
-        // STATISTICS
-        // ============================================
-        $allProducts = Product::all();
-        $totalProductsCount = $allProducts->count();
-        $lowStockCount = $allProducts->filter(fn($p) => $p->stock < 10 && $p->stock > 0)->count();
-        $outOfStockCount = $allProducts->filter(fn($p) => $p->stock == 0)->count();
-        $criticalCount = $allProducts->filter(fn($p) => $p->stock < 5 && $p->stock > 0)->count();
-        $totalValue = $allProducts->sum(fn($p) => $p->price * $p->stock);
-
-        // ============================================
-        // HELPER: buildURL
-        // ============================================
-        function buildURL($overrides = [])
-        {
-            $params = array_merge($_GET, $overrides);
+        $buildURL = function ($overrides = []) {
+            $params = array_merge(request()->query(), $overrides);
             $params = array_filter($params, function ($v) {
                 return $v !== null && $v !== '';
             });
-            return 'inventory?' . http_build_query($params);
-        }
+            return route('admin.inventory') . '?' . http_build_query($params);
+        };
 
-        $success = $_GET['success'] ?? '';
-        $successCount = $_GET['count'] ?? 0;
+        $success = session('success');
+        $successCount = session('count', 0);
     @endphp
 
     <div class="inventory-container">
 
-        <!-- ========== PAGE HEADER ========== -->
+        {{-- ========== PAGE HEADER ========== --}}
         <div class="page-header no-print">
             <div class="page-header-left">
                 <h1>Inventory Management</h1>
                 <p class="page-description">Monitor and update your stock levels</p>
             </div>
+            <div class="header-actions">
+                {{-- ✅ MANAGE PRODUCTS — link sa Products page, hindi Add Product --}}
+                <a href="{{ route('admin.products.index') }}" class="btn-secondary">
+                    <i class="fas fa-box"></i> Manage Products
+                </a>
+            </div>
         </div>
 
-        <!-- ========== SUCCESS MESSAGES ========== -->
+        {{-- ========== SUCCESS MESSAGES ========== --}}
         @if($success)
-            <div class="alert alert-success no-print">
+            <div class="alert alert-success no-print" id="successAlert">
                 <i class="fas fa-check-circle"></i>
                 @php
                     $msgs = [
                         'single_updated' => 'Product stock updated successfully!',
+                        'stock_updated' => 'Product stock updated successfully!',
                         'bulk_updated' => "$successCount product(s) updated successfully!",
-                        'bulk_adjusted' => "$successCount product(s) adjusted successfully!"
+                        'bulk_adjusted' => "$successCount product(s) adjusted successfully!",
                     ];
                 @endphp
                 {{ $msgs[$success] ?? 'Action completed!' }}
+                <button type="button" class="alert-close" onclick="document.getElementById('successAlert').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
         @endif
 
-        <!-- ========== CRITICAL ALERT BANNER ========== -->
+        {{-- ========== CRITICAL ALERT BANNER ========== --}}
         @if($criticalCount > 0 || $outOfStockCount > 0)
             <div class="critical-banner no-print">
                 <div class="critical-icon"><i class="fas fa-exclamation-triangle"></i></div>
@@ -135,43 +65,43 @@
                         <span>{{ $criticalCount }} product(s) have <strong>critically low stock</strong> (below 5).</span>
                     @endif
                 </div>
-                <a href="{{ buildURL(['stock' => 'critical', 'page' => 1]) }}" class="btn-critical">View Critical Items</a>
+                <a href="{{ $buildURL(['stock' => 'critical', 'page' => 1]) }}" class="btn-critical">View Critical Items</a>
             </div>
         @endif
 
-        <!-- ========== STATS CARDS ========== -->
+        {{-- ========== STATS CARDS ========== --}}
         <div class="inventory-stats">
             <div class="stat-card">
                 <div class="stat-icon"><i class="fas fa-box"></i></div>
                 <div class="stat-info">
                     <h3>Total Products</h3>
-                    <p>{{ $totalProductsCount }}</p>
+                    <p>{{ number_format($totalProductsCount) }}</p>
                 </div>
             </div>
             <div class="stat-card warning">
                 <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
                 <div class="stat-info">
                     <h3>Low Stock</h3>
-                    <p>{{ $lowStockCount }}</p>
+                    <p>{{ number_format($lowStockCount) }}</p>
                 </div>
             </div>
             <div class="stat-card danger">
                 <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
                 <div class="stat-info">
                     <h3>Out of Stock</h3>
-                    <p>{{ $outOfStockCount }}</p>
+                    <p>{{ number_format($outOfStockCount) }}</p>
                 </div>
             </div>
             <div class="stat-card total">
                 <div class="stat-icon"><i class="fas fa-peso-sign"></i></div>
                 <div class="stat-info">
                     <h3>Inventory Value</h3>
-                    <p>₱{{ number_format($totalValue, 2) }}</p>
+                    <p>₱{{ number_format($inventoryValue, 2) }}</p>
                 </div>
             </div>
         </div>
 
-        <!-- ========== MAIN TABLE ========== -->
+        {{-- ========== MAIN TABLE ========== --}}
         <div class="data-card">
             <div class="card-header">
                 <div class="header-left">
@@ -191,43 +121,56 @@
                         <input type="text" name="search" id="searchInput" placeholder="Search products..."
                             value="{{ $search }}">
                         @if($search !== '')
-                            <a href="{{ buildURL(['search' => null]) }}" class="clear-search"><i class="fas fa-times"></i></a>
+                            <a href="{{ $buildURL(['search' => null]) }}" class="clear-search" title="Clear">
+                                <i class="fas fa-times"></i>
+                            </a>
                         @endif
-                        <button type="submit" class="search-btn">Search</button>
+                        <button type="submit" class="search-btn" title="Search">
+                            <i class="fas fa-search"></i>
+                        </button>
                     </div>
                 </form>
             </div>
 
-            <!-- ========== FILTER BAR ========== -->
+            {{-- ========== FILTER BAR ========== --}}
             <div class="filter-bar no-print">
                 <div class="filter-group">
                     <label><i class="fas fa-filter"></i> Filters:</label>
 
                     <select class="filter-select" onchange="location.href=this.value">
-                        <option value="{{ buildURL(['category' => null, 'page' => 1]) }}">All Categories</option>
+                        <option value="{{ $buildURL(['category' => null, 'page' => 1]) }}">All Categories</option>
                         @foreach($categories as $cat)
-                            <option value="{{ buildURL(['category' => $cat, 'page' => 1]) }}" {{ $filterCategory === $cat ? 'selected' : '' }}>
+                            <option value="{{ $buildURL(['category' => $cat, 'page' => 1]) }}" {{ $filterCategory === $cat ? 'selected' : '' }}>
                                 {{ $cat }}
                             </option>
                         @endforeach
                     </select>
 
                     <select class="filter-select" onchange="location.href=this.value">
-                        <option value="{{ buildURL(['stock' => null, 'page' => 1]) }}">All Stock Levels</option>
-                        <option value="{{ buildURL(['stock' => 'good', 'page' => 1]) }}" {{ $filterStock === 'good' ? 'selected' : '' }}>Good Stock (10+)</option>
-                        <option value="{{ buildURL(['stock' => 'low', 'page' => 1]) }}" {{ $filterStock === 'low' ? 'selected' : '' }}>Low Stock (1-9)</option>
-                        <option value="{{ buildURL(['stock' => 'critical', 'page' => 1]) }}" {{ $filterStock === 'critical' ? 'selected' : '' }}>Critical (< 5)</option>
-                        <option value="{{ buildURL(['stock' => 'out', 'page' => 1]) }}" {{ $filterStock === 'out' ? 'selected' : '' }}>Out of Stock (0)</option>
+                        <option value="{{ $buildURL(['stock' => null, 'page' => 1]) }}">All Stock Levels</option>
+                        <option value="{{ $buildURL(['stock' => 'good', 'page' => 1]) }}" {{ $filterStock === 'good' ? 'selected' : '' }}>Good Stock (10+)</option>
+                        <option value="{{ $buildURL(['stock' => 'low', 'page' => 1]) }}" {{ $filterStock === 'low' ? 'selected' : '' }}>Low Stock (1-9)</option>
+                        <option value="{{ $buildURL(['stock' => 'critical', 'page' => 1]) }}" {{ $filterStock === 'critical' ? 'selected' : '' }}>Critical (&lt; 5)</option>
+                        <option value="{{ $buildURL(['stock' => 'out', 'page' => 1]) }}" {{ $filterStock === 'out' ? 'selected' : '' }}>Out of Stock (0)</option>
                     </select>
 
                     <select class="filter-select" onchange="location.href=this.value">
-                        <option value="{{ buildURL(['sort' => 'id_asc']) }}" {{ $sortBy === 'id_asc' ? 'selected' : '' }}>
+                        <option value="{{ $buildURL(['sort' => 'id_asc', 'page' => 1]) }}" {{ $sortBy === 'id_asc' ? 'selected' : '' }}>
                             Sort: ID ↑</option>
-                        <option value="{{ buildURL(['sort' => 'stock_asc']) }}" {{ $sortBy === 'stock_asc' ? 'selected' : '' }}>Sort: Lowest Stock</option>
-                        <option value="{{ buildURL(['sort' => 'stock_desc']) }}" {{ $sortBy === 'stock_desc' ? 'selected' : '' }}>Sort: Highest Stock</option>
-                        <option value="{{ buildURL(['sort' => 'name_asc']) }}" {{ $sortBy === 'name_asc' ? 'selected' : '' }}>
+                        <option value="{{ $buildURL(['sort' => 'id_desc', 'page' => 1]) }}" {{ $sortBy === 'id_desc' ? 'selected' : '' }}>
+                            Sort: ID ↓</option>
+                        <option value="{{ $buildURL(['sort' => 'stock_asc', 'page' => 1]) }}" {{ $sortBy === 'stock_asc' ? 'selected' : '' }}>
+                            Sort: Lowest Stock</option>
+                        <option value="{{ $buildURL(['sort' => 'stock_desc', 'page' => 1]) }}" {{ $sortBy === 'stock_desc' ? 'selected' : '' }}>
+                            Sort: Highest Stock</option>
+                        <option value="{{ $buildURL(['sort' => 'name_asc', 'page' => 1]) }}" {{ $sortBy === 'name_asc' ? 'selected' : '' }}>
                             Sort: Name A-Z</option>
-                        <option value="{{ buildURL(['sort' => 'value_desc']) }}" {{ $sortBy === 'value_desc' ? 'selected' : '' }}>Sort: Highest Value</option>
+                        <option value="{{ $buildURL(['sort' => 'name_desc', 'page' => 1]) }}" {{ $sortBy === 'name_desc' ? 'selected' : '' }}>
+                            Sort: Name Z-A</option>
+                        <option value="{{ $buildURL(['sort' => 'value_desc', 'page' => 1]) }}" {{ $sortBy === 'value_desc' ? 'selected' : '' }}>
+                            Sort: Highest Value</option>
+                        <option value="{{ $buildURL(['sort' => 'value_asc', 'page' => 1]) }}" {{ $sortBy === 'value_asc' ? 'selected' : '' }}>
+                            Sort: Lowest Value</option>
                     </select>
 
                     @if($search || $filterCategory || $filterStock || $sortBy !== 'id_asc')
@@ -238,15 +181,15 @@
                 </div>
             </div>
 
-            <!-- ========== SINGLE UPDATE FORM (per row - hidden) ========== -->
+            {{-- ========== SINGLE UPDATE FORM (per row - hidden) ========== --}}
             <form method="POST" action="{{ route('admin.products.quick-stock') }}" id="singleForm" style="display:none;">
                 @csrf
-                <input type="hidden" name="quick_stock_id" id="singleProductId">
-                <input type="hidden" name="quick_stock_value" id="singleStockValue">
+                <input type="hidden" name="id" id="singleProductId">
+                <input type="hidden" name="stock" id="singleStockValue">
             </form>
 
-            <!-- ========== BULK FORM ========== -->
-            <form method="POST" action="{{ route('admin.inventory.bulk-update') ?? '#' }}" id="bulkForm">
+            {{-- ========== BULK FORM ========== --}}
+            <form method="POST" action="{{ route('admin.inventory.bulk-update') }}" id="bulkForm">
                 @csrf
                 <div class="table-wrapper">
                     <table class="data-table">
@@ -314,11 +257,11 @@
                                         </td>
                                         <td class="col-update no-print">
                                             <div class="update-stock-group">
-                                                <button type="button" class="qty-btn"
+                                                <button type="button" class="qty-btn" title="Decrease"
                                                     onclick="adjustInput({{ $p->id }}, -1)">−</button>
                                                 <input type="number" name="stock[{{ $p->id }}]" id="stock_{{ $p->id }}"
                                                     value="{{ $p->stock }}" min="0" class="stock-input">
-                                                <button type="button" class="qty-btn"
+                                                <button type="button" class="qty-btn" title="Increase"
                                                     onclick="adjustInput({{ $p->id }}, 1)">+</button>
                                                 <button type="button" class="btn-save-single" onclick="saveSingle({{ $p->id }})"
                                                     title="Save this row">
@@ -332,13 +275,18 @@
                                 <tr class="empty-row">
                                     <td colspan="9">
                                         <div class="empty-state">
-                                            <i class="fas fa-box-open"></i>
+                                            <div class="empty-icon">
+                                                <i class="fas fa-box-open"></i>
+                                            </div>
                                             <p>No products found</p>
                                             @if($search || $filterCategory || $filterStock)
-                                                <a href="{{ route('admin.inventory') }}" class="btn-add-first">Clear filters</a>
+                                                <a href="{{ route('admin.inventory') }}" class="btn-add-first">
+                                                    <i class="fas fa-times"></i> Clear filters
+                                                </a>
                                             @else
-                                                <a href="{{ route('admin.products.create') }}" class="btn-add-first">Add first
-                                                    product</a>
+                                                <a href="{{ route('admin.products.index') }}" class="btn-add-first">
+                                                    <i class="fas fa-box"></i> Go to Products
+                                                </a>
                                             @endif
                                         </div>
                                     </td>
@@ -348,7 +296,7 @@
                     </table>
                 </div>
 
-                <!-- ========== BULK ACTIONS BAR (Bottom) ========== -->
+                {{-- ========== BULK ACTIONS BAR ========== --}}
                 <div class="bulk-adjust-bar no-print" id="bulkAdjustBar" style="display: none;">
                     <div class="bulk-info">
                         <i class="fas fa-check-square"></i>
@@ -370,7 +318,7 @@
                     </div>
                 </div>
 
-                <!-- ========== SAVE ALL BUTTON ========== -->
+                {{-- ========== SAVE ALL BUTTON ========== --}}
                 <div class="save-all-bar no-print">
                     <button type="submit" name="bulk_update" value="1" class="btn-save-all">
                         <i class="fas fa-save"></i> Save All Changes
@@ -378,36 +326,60 @@
                 </div>
             </form>
 
-            <!-- ========== PAGINATION ========== -->
-            @if($totalPages > 1)
-                <div class="pagination no-print">
+            {{-- ========== PAGINATION (PROFESSIONAL) ========== --}}
+            @if($products->hasPages())
+                <div class="pagination-wrapper no-print">
                     <div class="pagination-info">
-                        Showing {{ $offset + 1 }}-{{ min($offset + $perPage, $totalProducts) }} of {{ $totalProducts }} products
+                        <i class="fas fa-list-ul"></i>
+                        Showing <strong>{{ $products->firstItem() }}-{{ $products->lastItem() }}</strong> of
+                        <strong>{{ $products->total() }}</strong> products
                     </div>
-                    <div class="pagination-controls">
-                        @if($page > 1)
-                            <a href="{{ buildURL(['page' => 1]) }}" class="page-btn"><i class="fas fa-angle-double-left"></i></a>
-                            <a href="{{ buildURL(['page' => $page - 1]) }}" class="page-btn"><i class="fas fa-angle-left"></i></a>
-                        @endif
-                        @php
-                            $start = max(1, $page - 2);
-                            $end = min($totalPages, $page + 2);
-                        @endphp
-                        @for($i = $start; $i <= $end; $i++)
-                            <a href="{{ buildURL(['page' => $i]) }}" class="page-btn {{ $i == $page ? 'active' : '' }}">{{ $i }}</a>
-                        @endfor
-                        @if($page < $totalPages)
-                            <a href="{{ buildURL(['page' => $page + 1]) }}" class="page-btn"><i class="fas fa-angle-right"></i></a>
-                            <a href="{{ buildURL(['page' => $totalPages]) }}" class="page-btn"><i
-                                    class="fas fa-angle-double-right"></i></a>
-                        @endif
-                    </div>
+
+                    <nav class="custom-pagination" role="navigation" aria-label="Pagination Navigation">
+                        <ul class="pagination-list">
+                            @if ($products->onFirstPage())
+                                <li class="pagination-item disabled">
+                                    <span class="pagination-link"><i class="fas fa-chevron-left"></i></span>
+                                </li>
+                            @else
+                                <li class="pagination-item">
+                                    <a href="{{ $products->previousPageUrl() }}" class="pagination-link" rel="prev">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                            @endif
+
+                            @foreach ($products->getUrlRange(max(1, $products->currentPage() - 2), min($products->lastPage(), $products->currentPage() + 2)) as $pageNum => $url)
+                                @if ($pageNum == $products->currentPage())
+                                    <li class="pagination-item active">
+                                        <span class="pagination-link">{{ $pageNum }}</span>
+                                    </li>
+                                @else
+                                    <li class="pagination-item">
+                                        <a href="{{ $url }}" class="pagination-link">{{ $pageNum }}</a>
+                                    </li>
+                                @endif
+                            @endforeach
+
+                            @if ($products->hasMorePages())
+                                <li class="pagination-item">
+                                    <a href="{{ $products->nextPageUrl() }}" class="pagination-link" rel="next">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            @else
+                                <li class="pagination-item disabled">
+                                    <span class="pagination-link"><i class="fas fa-chevron-right"></i></span>
+                                </li>
+                            @endif
+                        </ul>
+                    </nav>
                 </div>
             @endif
         </div>
     </div>
 
-    <!-- ========== JAVASCRIPT ========== -->
+    {{-- ========== JAVASCRIPT ========== --}}
     <script>
         function saveSingle(id) {
             const input = document.getElementById('stock_' + id);
@@ -468,15 +440,25 @@
             }
             if (!confirm((mode === 'add' ? 'Add ' : 'Subtract ') + amount + ' to ' + count + ' product(s)?')) return;
 
-            document.getElementById('adjustModeHidden').value = mode;
-            document.getElementById('adjustAmountHidden').value = amount;
-
             const form = document.getElementById('bulkForm');
-            const hidden = document.createElement('input');
-            hidden.type = 'hidden';
-            hidden.name = 'bulk_adjust';
-            hidden.value = '1';
-            form.appendChild(hidden);
+            const hiddenMode = document.createElement('input');
+            hiddenMode.type = 'hidden';
+            hiddenMode.name = 'bulk_adjust_mode';
+            hiddenMode.value = mode;
+            form.appendChild(hiddenMode);
+
+            const hiddenAmount = document.createElement('input');
+            hiddenAmount.type = 'hidden';
+            hiddenAmount.name = 'bulk_adjust_amount';
+            hiddenAmount.value = amount;
+            form.appendChild(hiddenAmount);
+
+            const hiddenFlag = document.createElement('input');
+            hiddenFlag.type = 'hidden';
+            hiddenFlag.name = 'bulk_adjust';
+            hiddenFlag.value = '1';
+            form.appendChild(hiddenFlag);
+
             form.submit();
         }
 
@@ -486,16 +468,28 @@
                 document.getElementById('searchInput').focus();
             }
         });
+
+        // Auto hide success alert
+        document.addEventListener('DOMContentLoaded', function () {
+            const successAlert = document.getElementById('successAlert');
+            if (successAlert) {
+                setTimeout(() => {
+                    successAlert.style.transition = 'opacity 0.5s ease';
+                    successAlert.style.opacity = '0';
+                    setTimeout(() => successAlert.remove(), 500);
+                }, 5000);
+            }
+        });
     </script>
 
     <style>
-        /* COPY LAHAT NG CSS MULA SA OLD FILE */
         .inventory-container {
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
         }
 
+        /* ============ PAGE HEADER ============ */
         .page-header {
             display: flex;
             justify-content: space-between;
@@ -509,14 +503,71 @@
             font-size: 1.5rem;
             font-weight: 600;
             color: #2C2B26;
-            margin-bottom: 0.25rem;
+            margin: 0 0 0.25rem 0;
         }
 
         .page-description {
             font-size: 0.8rem;
             color: #9E9D97;
+            margin: 0;
         }
 
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        /* ============ BUTTONS ============ */
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.5rem;
+            background: linear-gradient(135deg, #7A8B4F, #576238);
+            color: white;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            line-height: 1;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(87, 98, 56, 0.3);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.5rem;
+            background: white;
+            color: #6B6A65;
+            border: 1px solid #E3DCD0;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            font-family: inherit;
+            line-height: 1;
+        }
+
+        .btn-secondary:hover {
+            background: #F0EADC;
+            border-color: #576238;
+            color: #576238;
+            transform: translateY(-1px);
+        }
+
+        /* ============ ALERTS ============ */
         .alert {
             display: flex;
             align-items: center;
@@ -524,6 +575,8 @@
             padding: 0.875rem 1rem;
             border-radius: 0.5rem;
             font-size: 0.85rem;
+            position: relative;
+            animation: slideDown 0.3s ease;
         }
 
         .alert-success {
@@ -532,12 +585,34 @@
             color: #576238;
         }
 
-        .alert-error {
-            background: #FEF0ED;
-            border: 1px solid #C5705A;
-            color: #C5705A;
+        .alert-close {
+            background: transparent;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            padding: 0.25rem;
+            margin-left: auto;
+            opacity: 0.6;
+            transition: opacity 0.2s ease;
         }
 
+        .alert-close:hover {
+            opacity: 1;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ============ CRITICAL BANNER ============ */
         .critical-banner {
             background: linear-gradient(135deg, #FEF0ED, #FEF5E8);
             border: 1px solid #C5705A;
@@ -589,8 +664,10 @@
 
         .btn-critical:hover {
             background: #A85844;
+            transform: translateY(-1px);
         }
 
+        /* ============ STATS CARDS ============ */
         .inventory-stats {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -623,6 +700,7 @@
         .stat-card:hover {
             transform: translateY(-2px);
             border-color: #576238;
+            box-shadow: 0 4px 12px rgba(87, 98, 56, 0.06);
         }
 
         .stat-icon {
@@ -667,6 +745,7 @@
             margin: 0 0 0.25rem 0;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            font-weight: 600;
         }
 
         .stat-info p {
@@ -674,8 +753,11 @@
             font-weight: 700;
             color: #2C2B26;
             margin: 0;
+            font-family: 'Inter', sans-serif;
+            line-height: 1.2;
         }
 
+        /* ============ DATA CARD ============ */
         .data-card {
             background: white;
             border: 1px solid #E3DCD0;
@@ -721,6 +803,7 @@
             font-weight: 500;
         }
 
+        /* ============ SEARCH ============ */
         .search-form {
             margin: 0;
         }
@@ -733,32 +816,45 @@
 
         .search-icon {
             position: absolute;
-            left: 0.75rem;
+            left: 0.875rem;
             color: #9E9D97;
             font-size: 0.8rem;
+            pointer-events: none;
+            z-index: 1;
         }
 
         .search-wrapper input {
-            padding: 0.5rem 2rem;
+            padding: 0.55rem 3rem 0.55rem 2.25rem;
             border: 1px solid #E3DCD0;
-            border-radius: 0.5rem 0 0 0.5rem;
+            border-radius: 0.5rem;
             font-size: 0.8rem;
-            width: 260px;
+            width: 280px;
             font-family: 'Inter', sans-serif;
+            background: white;
+            transition: all 0.2s ease;
         }
 
         .search-wrapper input:focus {
             outline: none;
             border-color: #576238;
+            box-shadow: 0 0 0 3px rgba(87, 98, 56, 0.1);
+        }
+
+        .search-wrapper input::placeholder {
+            color: #C4C3BC;
         }
 
         .clear-search {
             position: absolute;
-            right: 5rem;
+            right: 2.75rem;
             color: #9E9D97;
             text-decoration: none;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             padding: 0.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
         }
 
         .clear-search:hover {
@@ -766,19 +862,27 @@
         }
 
         .search-btn {
+            position: absolute;
+            right: 0.25rem;
             background: #576238;
             color: white;
             border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 0 0.5rem 0.5rem 0;
-            font-size: 0.8rem;
+            width: 34px;
+            height: 34px;
+            border-radius: 0.375rem;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            transition: all 0.2s;
         }
 
         .search-btn:hover {
             background: #3E4A28;
         }
 
+        /* ============ FILTER BAR ============ */
         .filter-bar {
             padding: 0.75rem 1.25rem;
             background: #FDF8F0;
@@ -809,29 +913,44 @@
             background: white;
             color: #2C2B26;
             cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
         }
 
         .filter-select:hover {
             border-color: #576238;
         }
 
+        .filter-select:focus {
+            outline: none;
+            border-color: #576238;
+            box-shadow: 0 0 0 3px rgba(87, 98, 56, 0.1);
+        }
+
         .btn-clear-filters {
             background: #FEF0ED;
             color: #C5705A;
+            border: 1px solid #F8DCD4;
             padding: 0.4rem 0.75rem;
             border-radius: 0.375rem;
             font-size: 0.7rem;
+            font-weight: 600;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
             gap: 0.3rem;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            line-height: 1;
         }
 
         .btn-clear-filters:hover {
             background: #C5705A;
             color: white;
+            border-color: #C5705A;
         }
 
+        /* ============ BULK BAR ============ */
         .bulk-adjust-bar {
             background: #E8F0E3;
             border-top: 1px solid #576238;
@@ -868,6 +987,7 @@
             border-radius: 0.375rem;
             font-size: 0.75rem;
             background: white;
+            font-family: inherit;
         }
 
         .bulk-amount {
@@ -887,6 +1007,8 @@
             align-items: center;
             gap: 0.3rem;
             font-weight: 500;
+            font-family: inherit;
+            transition: all 0.2s ease;
         }
 
         .btn-apply:hover {
@@ -901,12 +1023,15 @@
             border-radius: 0.375rem;
             font-size: 0.75rem;
             cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
         }
 
         .btn-cancel:hover {
             background: #F0EADC;
         }
 
+        /* ============ SAVE ALL ============ */
         .save-all-bar {
             padding: 1rem 1.25rem;
             background: #FDF8F0;
@@ -928,6 +1053,7 @@
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
+            font-family: inherit;
         }
 
         .btn-save-all:hover {
@@ -936,6 +1062,7 @@
             box-shadow: 0 4px 12px rgba(87, 98, 56, 0.2);
         }
 
+        /* ============ TABLE ============ */
         .table-wrapper {
             overflow-x: auto;
         }
@@ -946,6 +1073,7 @@
             font-family: 'Inter', sans-serif;
             font-size: 0.8125rem;
             line-height: 1.5;
+            min-width: 900px;
         }
 
         .data-table thead tr {
@@ -961,6 +1089,7 @@
             font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            white-space: nowrap;
         }
 
         .data-table td {
@@ -969,6 +1098,10 @@
             color: #2C2B26;
             border-bottom: 1px solid #F0EADC;
             vertical-align: middle;
+        }
+
+        .data-table tbody tr {
+            transition: background 0.15s ease;
         }
 
         .data-table tbody tr:hover {
@@ -1049,14 +1182,17 @@
         .price-value {
             font-weight: 600;
             color: #576238;
+            font-family: 'Inter', sans-serif;
         }
 
         .value-text {
             font-weight: 600;
             color: #2C2B26;
             font-size: 0.8rem;
+            font-family: 'Inter', sans-serif;
         }
 
+        /* ============ STOCK DISPLAY ============ */
         .stock-display {
             display: flex;
             flex-direction: column;
@@ -1068,7 +1204,7 @@
             padding: 0.2rem 0.6rem;
             border-radius: 2rem;
             font-size: 0.7rem;
-            font-weight: 500;
+            font-weight: 600;
             width: fit-content;
         }
 
@@ -1101,12 +1237,14 @@
             transition: width 0.3s ease;
         }
 
+        /* ============ STATUS BADGES ============ */
         .status-badge {
             display: inline-block;
             padding: 0.25rem 0.625rem;
             border-radius: 2rem;
             font-size: 0.7rem;
-            font-weight: 500;
+            font-weight: 600;
+            white-space: nowrap;
         }
 
         .status-good {
@@ -1124,6 +1262,7 @@
             color: #C5705A;
         }
 
+        /* ============ UPDATE STOCK GROUP ============ */
         .update-stock-group {
             display: flex;
             align-items: center;
@@ -1131,19 +1270,22 @@
         }
 
         .qty-btn {
-            width: 28px;
+            width: 30px;
             height: 32px;
             background: #F0EADC;
             border: 1px solid #E3DCD0;
             border-radius: 0.375rem;
             cursor: pointer;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             color: #576238;
-            font-weight: 600;
+            font-weight: 700;
             transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-family: inherit;
+            padding: 0;
+            line-height: 1;
         }
 
         .qty-btn:hover {
@@ -1160,11 +1302,13 @@
             font-size: 0.8rem;
             text-align: center;
             font-family: 'Inter', sans-serif;
+            transition: all 0.2s ease;
         }
 
         .stock-input:focus {
             outline: none;
             border-color: #576238;
+            box-shadow: 0 0 0 3px rgba(87, 98, 56, 0.1);
         }
 
         .btn-save-single {
@@ -1181,6 +1325,8 @@
             justify-content: center;
             transition: all 0.2s ease;
             margin-left: 0.2rem;
+            font-family: inherit;
+            padding: 0;
         }
 
         .btn-save-single:hover {
@@ -1188,90 +1334,178 @@
             transform: scale(1.05);
         }
 
-        .pagination {
+        /* ============ PAGINATION (PROFESSIONAL) ============ */
+        .pagination-wrapper {
+            padding: 1rem 1.25rem;
+            border-top: 1px solid #E3DCD0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem 1.25rem;
-            border-top: 1px solid #E3DCD0;
-            background: #FDF8F0;
             flex-wrap: wrap;
-            gap: 0.5rem;
+            gap: 1rem;
+            background: #FDF8F0;
         }
 
         .pagination-info {
-            font-size: 0.75rem;
-            color: #7A7A75;
-        }
-
-        .pagination-controls {
+            font-size: 0.8rem;
+            color: #6B6A65;
             display: flex;
-            gap: 0.25rem;
-        }
-
-        .page-btn {
-            min-width: 32px;
-            height: 32px;
-            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            padding: 0 0.5rem;
-            border: 1px solid #E3DCD0;
-            background: white;
-            color: #2C2B26;
-            border-radius: 0.375rem;
+            gap: 0.5rem;
+        }
+
+        .pagination-info i {
+            color: #576238;
             font-size: 0.75rem;
-            text-decoration: none;
-            transition: all 0.2s ease;
         }
 
-        .page-btn:hover {
-            background: #F0EADC;
-            border-color: #576238;
-        }
-
-        .page-btn.active {
-            background: #576238;
-            color: white;
-            border-color: #576238;
+        .pagination-info strong {
+            color: #2C2B26;
             font-weight: 600;
         }
 
+        .custom-pagination {
+            display: inline-block;
+        }
+
+        .pagination-list {
+            display: flex;
+            gap: 0.375rem;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            align-items: center;
+        }
+
+        .pagination-item {
+            display: inline-block;
+        }
+
+        .pagination-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 38px;
+            height: 38px;
+            padding: 0 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #576238;
+            background: white;
+            border: 1px solid #E3DCD0;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .pagination-link:hover {
+            background: #F0EADC;
+            border-color: #576238;
+            color: #576238;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(87, 98, 56, 0.1);
+        }
+
+        .pagination-item.active .pagination-link {
+            background: #576238;
+            border-color: #576238;
+            color: white;
+            font-weight: 700;
+            cursor: default;
+            box-shadow: 0 2px 8px rgba(87, 98, 56, 0.25);
+        }
+
+        .pagination-item.active .pagination-link:hover {
+            transform: none;
+            background: #576238;
+            color: white;
+        }
+
+        .pagination-item.disabled .pagination-link {
+            background: #F0EADC;
+            color: #C4C3BC;
+            border-color: #E3DCD0;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .pagination-item.disabled .pagination-link:hover {
+            transform: none;
+            background: #F0EADC;
+            color: #C4C3BC;
+            border-color: #E3DCD0;
+            box-shadow: none;
+        }
+
+        .pagination-link i {
+            font-size: 0.7rem;
+        }
+
+        /* ============ EMPTY STATE ============ */
         .empty-row td {
             padding: 0 !important;
         }
 
         .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2.5rem 1.5rem;
             text-align: center;
-            padding: 3rem 2rem;
+            gap: 0.875rem;
         }
 
-        .empty-state i {
-            font-size: 3rem;
-            color: #D4C9BD;
-            margin-bottom: 1rem;
-            display: block;
+        .empty-icon {
+            width: 60px;
+            height: 60px;
+            background: #F0EADC;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .empty-icon i {
+            font-size: 1.5rem;
+            color: #C4C3BC;
         }
 
         .empty-state p {
             color: #9E9D97;
-            margin-bottom: 0.75rem;
+            margin: 0;
+            font-size: 0.85rem;
         }
 
         .btn-add-first {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
             background: #576238;
             color: white;
             padding: 0.5rem 1rem;
             border-radius: 0.5rem;
             text-decoration: none;
             font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            line-height: 1;
         }
 
         .btn-add-first:hover {
             background: #3E4A28;
+            transform: translateY(-1px);
         }
 
+        .btn-add-first i {
+            font-size: 0.75rem;
+        }
+
+        /* ============ PRINT ============ */
         @media print {
             .no-print {
                 display: none !important;

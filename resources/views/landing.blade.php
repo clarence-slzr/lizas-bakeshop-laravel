@@ -36,7 +36,7 @@
             font-family: 'Playfair Display', serif;
         }
 
-        /* ========== SCROLL PROGRESS BAR ========== */
+        /* SCROLL PROGRESS */
         .scroll-progress {
             position: fixed;
             top: 0;
@@ -48,7 +48,7 @@
             transition: width 0.1s ease;
         }
 
-        /* ========== NAVIGATION ========== */
+        /* NAVBAR */
         .navbar {
             padding: 1.5rem 2rem;
             display: flex;
@@ -139,7 +139,6 @@
             color: white !important;
         }
 
-        /* Mobile menu toggle */
         .menu-toggle {
             display: none;
             background: transparent;
@@ -149,7 +148,7 @@
             cursor: pointer;
         }
 
-        /* ========== HERO SECTION ========== */
+        /* HERO */
         .hero {
             display: flex;
             align-items: center;
@@ -216,7 +215,6 @@
             flex-wrap: wrap;
         }
 
-        /* Store status indicator */
         .store-status {
             display: inline-flex;
             align-items: center;
@@ -262,6 +260,7 @@
             }
         }
 
+        /* BUTTONS */
         .btn-primary {
             display: inline-block;
             background: #576238;
@@ -325,7 +324,7 @@
             color: white;
         }
 
-        /* ========== SECTION STYLES ========== */
+        /* SECTIONS */
         .section-header {
             text-align: center;
             margin-bottom: 3rem;
@@ -354,13 +353,13 @@
             margin-bottom: 0.75rem;
         }
 
-        /* ========== PRODUCTS SECTION ========== */
-        .products-section {
+        /* BEST PRODUCTS SECTION */
+        .best-products-section {
             padding: 5rem 2rem;
             background: white;
         }
 
-        .products-grid {
+        .best-products-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 2rem;
@@ -368,23 +367,25 @@
             margin: 0 auto;
         }
 
-        .product-card {
+        .best-products-grid .product-card {
             background: #F0EADC;
             border: 1px solid #E3DCD0;
             border-radius: 0.75rem;
             overflow: hidden;
             transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
         }
 
-        .product-card:hover {
+        .best-products-grid .product-card:hover {
             transform: translateY(-6px);
             border-color: #576238;
             box-shadow: 0 12px 24px rgba(87, 98, 56, 0.12);
         }
 
-        .product-image {
-            height: 200px;
-            background: #E8E1D4;
+        .best-products-grid .product-image {
+            height: 220px;
+            background: #F5F1E8;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -392,87 +393,155 @@
             position: relative;
         }
 
-        .product-image img {
+        .best-products-grid .product-image img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.4s ease;
+            transition: transform 0.5s ease;
         }
 
-        .product-card:hover .product-image img {
+        .best-products-grid .product-card:hover .product-image img {
             transform: scale(1.05);
         }
 
-        .product-info {
-            padding: 1.25rem;
+        .best-products-grid .image-badge {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: #D4A054;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            z-index: 2;
         }
 
-        .product-info h3 {
-            font-size: 1.1rem;
+        .best-products-grid .product-info {
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .best-products-grid .product-info h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.05rem;
             font-weight: 600;
             color: #2C2B26;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
+            line-height: 1.3;
+            min-height: 2.6rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
 
-        .product-price {
+        .best-products-grid .product-price {
             font-size: 1.25rem;
             font-weight: 700;
             color: #576238;
-            margin-bottom: 0.75rem;
+            font-family: 'Inter', sans-serif;
+            margin-bottom: 1rem;
         }
 
-        .product-badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 2rem;
-            font-size: 0.7rem;
-            font-weight: 600;
-            margin-right: 0.5rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .badge-best {
-            background: #D4A054;
-            color: white;
-        }
-
-        .badge-stock {
-            background: #576238;
-            color: white;
-        }
-
-        .badge-new {
-            background: #C5705A;
-            color: white;
-        }
-
-        .btn-order {
+        .best-products-grid .btn-view-details {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 0.4rem;
             background: transparent;
             color: #576238;
-            padding: 0.5rem 1rem;
+            padding: 0.6rem 1.2rem;
             border-radius: 2rem;
             text-decoration: none;
             font-size: 0.8rem;
-            font-weight: 500;
+            font-weight: 600;
             border: 1px solid #576238;
-            margin-top: 0.75rem;
             transition: all 0.2s ease;
+            margin-top: auto;
+            align-self: flex-start;
         }
 
-        .btn-order:hover {
+        .best-products-grid .btn-view-details:hover {
             background: #576238;
             color: white;
         }
 
-        .view-all {
+        .best-products-grid .btn-view-details i {
+            transition: transform 0.2s ease;
+        }
+
+        .best-products-grid .btn-view-details:hover i {
+            transform: translateX(3px);
+        }
+
+        .empty-state-full {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 4rem 2rem;
+            background: #F0EADC;
+            border: 2px dashed #E3DCD0;
+            border-radius: 12px;
+        }
+
+        .empty-state-full i {
+            font-size: 3.5rem;
+            color: #D4C9BD;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .empty-state-full p {
+            color: #6B6A65;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .empty-state-full small {
+            color: #9E9D97;
+            font-size: 0.85rem;
+        }
+
+        .view-all-wrapper {
             text-align: center;
             margin-top: 3rem;
         }
 
-        /* ========== WHY CHOOSE US ========== */
+        .view-all-wrapper .btn-view-all {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: #576238;
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 2rem;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 12px rgba(87, 98, 56, 0.2);
+        }
+
+        .view-all-wrapper .btn-view-all:hover {
+            background: #3E4A28;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(87, 98, 56, 0.3);
+        }
+
+        .view-all-wrapper .btn-view-all i {
+            transition: transform 0.2s ease;
+        }
+
+        .view-all-wrapper .btn-view-all:hover i {
+            transform: translateX(4px);
+        }
+
+        /* FEATURES */
         .features-section {
             padding: 5rem 2rem;
             background: #F0EADC;
@@ -526,10 +595,82 @@
             line-height: 1.6;
         }
 
-        /* ========== ABOUT SECTION ========== */
-        .about-section {
+        /* TESTIMONIALS */
+        .testimonials-section {
             padding: 5rem 2rem;
             background: white;
+        }
+
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        .testimonial-card {
+            background: #F0EADC;
+            border: 1px solid #E3DCD0;
+            border-radius: 0.75rem;
+            padding: 2rem 1.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .testimonial-card:hover {
+            transform: translateY(-4px);
+            border-color: #D4A054;
+        }
+
+        .testimonial-stars {
+            color: #FFD700;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .testimonial-text {
+            color: #2C2B26;
+            font-size: 0.95rem;
+            line-height: 1.7;
+            margin-bottom: 1.5rem;
+            font-style: italic;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .testimonial-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #576238;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .testimonial-author-info strong {
+            display: block;
+            font-size: 0.9rem;
+            color: #2C2B26;
+            font-weight: 600;
+        }
+
+        .testimonial-author-info span {
+            font-size: 0.75rem;
+            color: #6B6A65;
+        }
+
+        /* ABOUT */
+        .about-section {
+            padding: 5rem 2rem;
+            background: #F0EADC;
         }
 
         .about-container {
@@ -565,7 +706,7 @@
         }
 
         .stat-item {
-            background: #F0EADC;
+            background: white;
             padding: 1rem 1.5rem;
             border-radius: 0.75rem;
             border: 1px solid #E3DCD0;
@@ -575,6 +716,7 @@
             font-size: 1.5rem;
             font-weight: 700;
             color: #576238;
+            font-family: 'Inter', sans-serif;
         }
 
         .stat-label {
@@ -596,7 +738,75 @@
             border: 1px solid #E3DCD0;
         }
 
-        /* ========== CONTACT SECTION ========== */
+        /* FAQ */
+        .faq-section {
+            padding: 5rem 2rem;
+            background: white;
+        }
+
+        .faq-grid {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .faq-item {
+            background: #F0EADC;
+            border: 1px solid #E3DCD0;
+            border-radius: 0.75rem;
+            padding: 1.25rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .faq-item:hover {
+            border-color: #576238;
+        }
+
+        .faq-item[open] {
+            border-color: #576238;
+            box-shadow: 0 4px 12px rgba(87, 98, 56, 0.08);
+        }
+
+        .faq-item summary {
+            font-weight: 600;
+            color: #2C2B26;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            list-style: none;
+            outline: none;
+        }
+
+        .faq-item summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .faq-item summary::after {
+            content: '\f067';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            font-size: 0.75rem;
+            color: #576238;
+            transition: transform 0.3s ease;
+        }
+
+        .faq-item[open] summary::after {
+            content: '\f068';
+        }
+
+        .faq-item p {
+            margin-top: 1rem;
+            color: #6B6A65;
+            font-size: 0.9rem;
+            line-height: 1.7;
+        }
+
+        /* CONTACT */
         .contact-section {
             padding: 5rem 2rem;
             background: #F0EADC;
@@ -690,22 +900,107 @@
             border: 1px solid #576238;
         }
 
-        .alert.error {
-            background: #FCE8E6;
-            color: #C5705A;
-            border: 1px solid #C5705A;
-        }
-
         .map-container iframe {
             width: 100%;
             border-radius: 0.75rem;
             border: 1px solid #E3DCD0;
         }
 
-        /* ========== SOCIAL SECTION ========== */
-        .social-section {
+        /* NEWSLETTER */
+        .newsletter-section {
             padding: 5rem 2rem;
             background: white;
+            text-align: center;
+        }
+
+        .newsletter-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .newsletter-section h2 {
+            font-size: 2rem;
+            font-weight: 500;
+            color: #2C2B26;
+            margin-bottom: 0.75rem;
+        }
+
+        .newsletter-section p {
+            color: #6B6A65;
+            margin-bottom: 2rem;
+        }
+
+        .newsletter-form {
+            display: flex;
+            gap: 0.5rem;
+            max-width: 500px;
+            margin: 0 auto;
+            background: #F0EADC;
+            border: 1px solid #E3DCD0;
+            border-radius: 2rem;
+            padding: 0.35rem;
+        }
+
+        .newsletter-form input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            padding: 0.75rem 1.25rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            color: #2C2B26;
+        }
+
+        .newsletter-form input::placeholder {
+            color: #A09F9A;
+        }
+
+        .newsletter-form button {
+            background: #576238;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .newsletter-form button:hover {
+            background: #D4A054;
+        }
+
+        .alert-message {
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .alert-success {
+            background: #E8F0E3;
+            color: #576238;
+            border: 1px solid #576238;
+        }
+
+        .alert-error {
+            background: #FCE8E6;
+            color: #C5705A;
+            border: 1px solid #C5705A;
+        }
+
+        /* SOCIAL */
+        .social-section {
+            padding: 5rem 2rem;
+            background: #F0EADC;
         }
 
         .fb-page-container {
@@ -717,7 +1012,7 @@
             overflow: hidden;
         }
 
-        /* ========== CTA SECTION ========== */
+        /* CTA */
         .cta-section {
             padding: 5rem 2rem;
             background: #576238;
@@ -734,6 +1029,17 @@
         .cta-section p {
             margin-bottom: 2rem;
             opacity: 0.9;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* CTA Buttons */
+        .cta-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
 
         .btn-cta {
@@ -754,7 +1060,28 @@
             transform: translateY(-2px);
         }
 
-        /* ========== BACK TO TOP ========== */
+        .btn-cta-outline {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: transparent;
+            color: white;
+            padding: 0.85rem 2rem;
+            border-radius: 2rem;
+            text-decoration: none;
+            font-weight: 600;
+            border: 2px solid white;
+            transition: all 0.2s ease;
+        }
+
+        .btn-cta-outline:hover {
+            background: white;
+            color: #576238;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        /* BACK TO TOP */
         .back-to-top {
             position: fixed;
             bottom: 2rem;
@@ -785,7 +1112,7 @@
             transform: translateY(-3px);
         }
 
-        /* ========== FOOTER ========== */
+        /* FOOTER */
         .footer {
             background: #2C2B26;
             color: #A09F9A;
@@ -827,7 +1154,7 @@
             font-size: 0.75rem;
         }
 
-        /* ========== MOBILE RESPONSIVE ========== */
+        /* RESPONSIVE */
         @media (max-width: 1024px) {
             .hero {
                 padding: 4rem 2rem;
@@ -837,11 +1164,9 @@
                 font-size: 2.5rem;
             }
 
-            .products-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .features-grid {
+            .best-products-grid,
+            .features-grid,
+            .testimonials-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
 
@@ -911,8 +1236,9 @@
                 font-size: 2rem;
             }
 
-            .products-grid,
-            .features-grid {
+            .best-products-grid,
+            .features-grid,
+            .testimonials-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -923,16 +1249,43 @@
             .footer-grid {
                 grid-template-columns: 1fr;
             }
+
+            .newsletter-form {
+                flex-direction: column;
+                background: transparent;
+                border: none;
+                padding: 0;
+            }
+
+            .newsletter-form input {
+                background: #F0EADC;
+                border: 1px solid #E3DCD0;
+                border-radius: 2rem;
+                margin-bottom: 0.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn-cta,
+            .btn-cta-outline {
+                width: 100%;
+                justify-content: center;
+                max-width: 300px;
+            }
         }
     </style>
 </head>
 
 <body>
 
-    <!-- Scroll Progress Bar -->
     <div class="scroll-progress" id="scrollProgress"></div>
 
-    <!-- ========== LANDING PAGE ========== -->
+    <!-- NAVBAR -->
     <nav class="navbar" id="navbar">
         <div class="logo">
             <img src="/assets/images/liza-logo.jpg" alt="Liza's Bakeshop" class="logo-img">
@@ -959,20 +1312,18 @@
         </div>
     </nav>
 
-    <!-- ========== HERO SECTION ========== -->
     @php
         $current_hour = (int) date('G');
-        $is_open = ($current_hour >= 7 && $current_hour < 19); // 7AM - 7PM
+        $is_open = ($current_hour >= 7 && $current_hour < 19);
     @endphp
 
+    <!-- HERO -->
     <section class="hero" id="home">
         <div class="hero-content">
-            <!-- Store Status -->
             <div class="store-status">
                 <span class="status-dot {{ $is_open ? 'status-open' : 'status-closed' }}"></span>
                 <span>{{ $is_open ? 'Open Now' : 'Closed' }} • Mon-Sun 7AM-7PM</span>
             </div>
-
             <div class="hero-badge">
                 <i class="fas fa-star"></i>
                 <i class="fas fa-star"></i>
@@ -995,70 +1346,58 @@
         </div>
     </section>
 
-    <!-- ========== PRODUCTS SECTION ========== -->
-    <section class="products-section" id="products">
+    <!-- BEST PRODUCTS OF THE DAY -->
+    <section class="best-products-section" id="products">
         <div class="section-header">
-            <span class="section-eyebrow">Our Selection</span>
-            <h2>Best Seller Products</h2>
-            <p>Freshly baked goods made with love and quality ingredients</p>
+            <span class="section-eyebrow">Today's Best</span>
+            <h2>Best Products of the Day</h2>
+            <p>Our top picks — freshly baked and ready for you</p>
         </div>
-        <div class="products-grid">
-            <div class="product-card">
-                <div class="product-image"><img src="/assets/images/products/regularbiscocho.jpg" alt="Biscocho Regular"
-                        onerror="this.parentElement.innerHTML='<i class=\'fas fa-cookie-bite\'></i>'"></div>
-                <div class="product-info">
-                    <span class="product-badge badge-best">Best Seller</span>
-                    <span class="product-badge badge-stock">In Stock</span>
-                    <h3>Biscocho Regular</h3>
-                    <div class="product-price">₱30.00</div>
-                    <a href="{{ route('login') }}" class="btn-order">View Details <i
-                            class="fa-solid fa-arrow-right"></i></a>
+
+        <div class="best-products-grid">
+            @if(isset($bestSellers) && $bestSellers->count() > 0)
+                @foreach($bestSellers as $product)
+                    <div class="product-card">
+                        <div class="product-image">
+                            @if($product->image && file_exists(storage_path('app/public/' . $product->image)))
+                                <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}">
+                            @else
+                                <img src="{{ asset('images/liza-logo.png') }}" alt="{{ $product->name }}"
+                                    style="object-fit: contain; padding: 2rem;"
+                                    onerror="this.src='{{ asset('assets/images/liza-logo.jpg') }}'">
+                            @endif
+
+                            @if($product->is_best_seller)
+                                <span class="image-badge">Best Seller</span>
+                            @endif
+                        </div>
+
+                        <div class="product-info">
+                            <h3>{{ $product->name }}</h3>
+                            <div class="product-price">₱{{ number_format($product->price, 2) }}</div>
+                            <a href="{{ route('products.show', $product->id) }}" class="btn-view-details">
+                                View Details <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                @endforeach
+            @else
+                <div class="empty-state-full">
+                    <i class="fas fa-cookie-bite"></i>
+                    <p>No best sellers available</p>
+                    <small>Please check back later for our fresh baked goods.</small>
                 </div>
-            </div>
-            <div class="product-card">
-                <div class="product-image"><img src="/assets/images/products/premiumbiscocho.jpg" alt="Biscocho Premium"
-                        onerror="this.parentElement.innerHTML='<i class=\'fas fa-crown\'></i>'"></div>
-                <div class="product-info">
-                    <span class="product-badge badge-best">Best Seller</span>
-                    <span class="product-badge badge-stock">In Stock</span>
-                    <h3>Biscocho Premium</h3>
-                    <div class="product-price">₱35.00</div>
-                    <a href="{{ route('login') }}" class="btn-order">View Details <i
-                            class="fa-solid fa-arrow-right"></i></a>
-                </div>
-            </div>
-            <div class="product-card">
-                <div class="product-image"><img src="/assets/images/products/ubebrazo.jpg" alt="Ube Brazo Cake"
-                        onerror="this.parentElement.innerHTML='<i class=\'fas fa-birthday-cake\'></i>'"></div>
-                <div class="product-info">
-                    <span class="product-badge badge-best">Best Seller</span>
-                    <span class="product-badge badge-stock">In Stock</span>
-                    <h3>Ube Brazo Cake</h3>
-                    <div class="product-price">₱540.00</div>
-                    <a href="{{ route('login') }}" class="btn-order">View Details <i
-                            class="fa-solid fa-arrow-right"></i></a>
-                </div>
-            </div>
-            <div class="product-card">
-                <div class="product-image"><img src="/assets/images/products/nyc.jpg" alt="New York Cheesecake"
-                        onerror="this.parentElement.innerHTML='<i class=\'fas fa-cheese\'></i>'"></div>
-                <div class="product-info">
-                    <span class="product-badge badge-new">New</span>
-                    <span class="product-badge badge-stock">In Stock</span>
-                    <h3>New York Cheesecake</h3>
-                    <div class="product-price">₱1,500.00</div>
-                    <a href="{{ route('login') }}" class="btn-order">View Details <i
-                            class="fa-solid fa-arrow-right"></i></a>
-                </div>
-            </div>
+            @endif
         </div>
-        <div class="view-all">
-            <a href="{{ route('login') }}" class="btn-outline">View All Products <i
-                    class="fa-solid fa-arrow-right"></i></a>
+
+        <div class="view-all-wrapper">
+            <a href="{{ route('products.index') }}" class="btn-view-all">
+                View All Products <i class="fas fa-arrow-right"></i>
+            </a>
         </div>
     </section>
 
-    <!-- ========== WHY CHOOSE US ========== -->
+    <!-- FEATURES -->
     <section class="features-section" id="features">
         <div class="section-header">
             <span class="section-eyebrow">Why Choose Us</span>
@@ -1089,7 +1428,72 @@
         </div>
     </section>
 
-    <!-- ========== ABOUT SECTION ========== -->
+    <!-- TESTIMONIALS -->
+    <section class="testimonials-section">
+        <div class="section-header">
+            <span class="section-eyebrow">Testimonials</span>
+            <h2>What Our Customers Say</h2>
+            <p>Real feedback from our beloved customers on Facebook</p>
+        </div>
+        <div class="testimonials-grid">
+
+          
+            <div class="testimonial-card">
+                <div class="testimonial-stars">
+                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i
+                        class="fas fa-star"></i><i class="fas fa-star"></i>
+                </div>
+                <p class="testimonial-text">"Cozy place & the staffs are accommodating & friendly Delicious pastries,
+                    unique desserts, and a large menu. Highly recommended!"</p>
+                <div class="testimonial-author">
+                    <div class="testimonial-avatar">RM</div>
+                    <div class="testimonial-author-info">
+                        <strong>Racquel Macatiguib</strong>
+                        <span><i class="fab fa-facebook" style="color: #1877F2;"></i> Recommends on Facebook</span>
+                    </div>
+                </div>
+            </div>
+
+            
+            <div class="testimonial-card">
+                <div class="testimonial-stars">
+                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i
+                        class="fas fa-star"></i><i class="fas fa-star"></i>
+                </div>
+                <p class="testimonial-text">"The cake is superb. Tama lang yung tamis and the cake itself is
+                    remarkable.
+                    Ang ganda, walang air pockets between the layers "</p>
+                <div class="testimonial-author">
+                    <div class="testimonial-avatar">AS</div>
+                    <div class="testimonial-author-info">
+                        <strong>Alysa Mae Santos</strong>
+                        <span><i class="fab fa-facebook" style="color: #1877F2;"></i> Recommends on Facebook</span>
+                    </div>
+                </div>
+            </div>
+
+           
+            <div class="testimonial-card">
+                <div class="testimonial-stars">
+                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i
+                        class="fas fa-star"></i><i class="fas fa-star"></i>
+                </div>
+                <p class="testimonial-text">"Great cakes, great staff! Always a pleasure to visit Liza's Bakeshop.
+                    Highly
+                    recommended for anyone craving quality baked goods."</p>
+                <div class="testimonial-author">
+                    <div class="testimonial-avatar">ML</div>
+                    <div class="testimonial-author-info">
+                        <strong>Mona J Labitoria-Visperas</strong>
+                        <span><i class="fab fa-facebook" style="color: #1877F2;"></i> Recommends on Facebook</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ABOUT -->
     <section class="about-section" id="about">
         <div class="about-container">
             <div class="about-content">
@@ -1120,7 +1524,42 @@
         </div>
     </section>
 
-    <!-- ========== CONTACT SECTION ========== -->
+    <!-- FAQ -->
+    <section class="faq-section">
+        <div class="section-header">
+            <span class="section-eyebrow">FAQ</span>
+            <h2>Frequently Asked Questions</h2>
+            <p>Common questions from our customers</p>
+        </div>
+        <div class="faq-grid">
+            <details class="faq-item">
+                <summary>Do you deliver?</summary>
+                <p>Yes! We deliver within San Miguel, Bulacan. Contact us at 0917 514 3444 for delivery fees and
+                    scheduling.</p>
+            </details>
+            <details class="faq-item">
+                <summary>Do you accept bulk orders?</summary>
+                <p>Absolutely! We accept bulk orders for events, parties, and corporate giveaways. Please order at least
+                    2 days in advance.</p>
+            </details>
+            <details class="faq-item">
+                <summary>How long do your products stay fresh?</summary>
+                <p>Our baked goods are best consumed within 3-5 days. Store in an airtight container to maintain
+                    freshness.</p>
+            </details>
+            <details class="faq-item">
+                <summary>What are your business hours?</summary>
+                <p>We are open Monday to Sunday, from 7:00 AM to 7:00 PM.</p>
+            </details>
+            <details class="faq-item">
+                <summary>Do you accept custom cake orders?</summary>
+                <p>Yes! We accept custom cake orders for birthdays, weddings, and other special occasions. Please
+                    contact us for inquiries.</p>
+            </details>
+        </div>
+    </section>
+
+    <!-- CONTACT -->
     <section class="contact-section" id="contact">
         <div class="section-header">
             <span class="section-eyebrow">Get in Touch</span>
@@ -1170,7 +1609,42 @@
         </div>
     </section>
 
-    <!-- ========== SOCIAL SECTION ========== -->
+    <!-- NEWSLETTER -->
+    <section class="newsletter-section">
+        <div class="newsletter-content">
+            <span class="section-eyebrow">Stay Updated</span>
+            <h2>Get Notified of New Products</h2>
+            <p>Subscribe to our newsletter for fresh updates, promos, and new arrivals.</p>
+
+            @if(session('newsletter_success'))
+                <div class="alert-message alert-success">
+                    <i class="fas fa-check-circle"></i> {{ session('newsletter_success') }}
+                </div>
+            @endif
+
+            @if(session('newsletter_error'))
+                <div class="alert-message alert-error">
+                    <i class="fas fa-exclamation-circle"></i> {{ session('newsletter_error') }}
+                </div>
+            @endif
+
+            @if($errors->any())
+                <div class="alert-message alert-error">
+                    <i class="fas fa-exclamation-circle"></i> {{ $errors->first() }}
+                </div>
+            @endif
+
+            <form action="{{ route('newsletter.subscribe') }}" method="POST" class="newsletter-form">
+                @csrf
+                <input type="email" name="email" placeholder="Enter your email address" required>
+                <button type="submit">
+                    <i class="fas fa-paper-plane"></i> Subscribe
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- SOCIAL -->
     <section class="social-section">
         <div class="section-header">
             <span class="section-eyebrow">Stay Connected</span>
@@ -1184,21 +1658,27 @@
         </div>
     </section>
 
-    <!-- ========== CTA SECTION ========== -->
+    <!-- CTA -->
     <section class="cta-section">
-        <h2>Ready to Order?</h2>
-        <p>Freshly baked goods, ready when you are</p>
-        <a href="{{ route('login') }}" class="btn-cta">
-            <i class="fas fa-shopping-bag"></i> Browse Products
-        </a>
+        <h2>Craving Something Fresh?</h2>
+        <p>Visit our shop or contact us — freshly baked goods, ready when you are</p>
+        <div class="cta-buttons">
+            <a href="{{ route('products.index') }}" class="btn-cta">
+                <i class="fas fa-shopping-bag"></i> Browse Products
+            </a>
+            <a href="https://www.google.com/maps/search/?api=1&query=Liza's+Bakeshop+San+Miguel+Bulacan" target="_blank"
+                rel="noopener noreferrer" class="btn-cta-outline">
+                <i class="fas fa-map-marker-alt"></i> Visit Our Shop
+            </a>
+        </div>
     </section>
 
-    <!-- ========== BACK TO TOP ========== -->
+    <!-- BACK TO TOP -->
     <a href="#" class="back-to-top" id="backToTop" title="Back to top">
         <i class="fas fa-arrow-up"></i>
     </a>
 
-    <!-- ========== FOOTER ========== -->
+    <!-- FOOTER -->
     <footer class="footer">
         <div class="footer-grid">
             <div class="footer-col">
@@ -1243,7 +1723,6 @@
         src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v18.0"></script>
 
     <script>
-        // ========== MOBILE MENU ==========
         function toggleMenu() {
             const nav = document.getElementById('navLinks');
             const icon = document.getElementById('menuIcon');
@@ -1258,7 +1737,6 @@
             });
         });
 
-        // ========== SCROLL PROGRESS BAR ==========
         window.addEventListener('scroll', () => {
             const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
             const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
@@ -1284,7 +1762,6 @@
             }
         });
 
-        // ========== SMOOTH SCROLL ==========
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 const target = document.querySelector(this.getAttribute('href'));

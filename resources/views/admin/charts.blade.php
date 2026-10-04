@@ -371,9 +371,9 @@
                             @php $width = $max_sold > 0 ? ($productSales[$index] / $max_sold) * 100 : 0; @endphp
                             <div class="product-list-item">
                                 <div class="product-rank">
-                                    @if($index == 0) 🥇
-                                    @elseif($index == 1) 🥈
-                                    @elseif($index == 2) 🥉
+                                    @if($index == 0) <i class="fa-solid fa-medal"></i>
+                                    @elseif($index == 1) <i class="fa-solid fa-medal"></i>
+                                    @elseif($index == 2) <i class="fa-solid fa-medal"></i>
                                     @else {{ $index + 1 }}th
                                     @endif
                                 </div>

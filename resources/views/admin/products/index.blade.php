@@ -45,7 +45,7 @@
         $statLowStock = Product::where('stock', '<', 10)->where('stock', '>', 0)->count();
         $statOutStock = Product::where('stock', 0)->count();
 
-        $success = $_GET['success'] ?? '';
+        $success = $_GET['success'] ?? session('success') ?? '';
 
         function buildURL($overrides = [])
         {
@@ -102,7 +102,7 @@
 
         <!-- SUCCESS MESSAGE -->
         @if($success)
-            <div class="alert alert-success">
+            <div class="alert alert-success" id="successAlert">
                 <i class="fas fa-check-circle"></i>
                 @php
                     $messages = [
@@ -117,6 +117,9 @@
                     ];
                 @endphp
                 {{ $messages[$success] ?? 'Action completed successfully!' }}
+                <button type="button" class="alert-close" onclick="document.getElementById('successAlert').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
         @endif
 
@@ -245,13 +248,12 @@
                                             </button>
                                         </td>
                                         <td class="col-status">
-                                            <a href="{{ route('admin.products.toggle', $p->id) ?? '#' }}"
+                                            <a href="{{ route('admin.products.toggle', $p->id) }}"
                                                 class="status-toggle {{ $p->is_available ? 'status-active' : 'status-inactive' }}">
                                                 {{ $p->is_available ? 'Active' : 'Inactive' }}
                                             </a>
                                         </td>
                                         <td class="col-actions">
-                                            {{-- ACTION DROPDOWN --}}
                                             <div class="action-dropdown">
                                                 <button type="button" class="action-trigger"
                                                     onclick="toggleActionMenu(event, {{ $p->id }})" title="Actions">
@@ -284,13 +286,11 @@
                                             @if($search || $filterCategory || $filterStock)
                                                 <i class="fas fa-filter"></i>
                                                 <p>No products match your filters</p>
-                                                <a href="{{ route('admin.products.index') }}" class="clear-search-link">Clear all
-                                                    filters</a>
+                                                <a href="{{ route('admin.products.index') }}" class="clear-search-link">Clear all filters</a>
                                             @else
                                                 <i class="fas fa-box-open"></i>
                                                 <p>No products yet</p>
-                                                <a href="{{ route('admin.products.create') }}" class="btn-add-first">Add your first
-                                                    product</a>
+                                                <a href="{{ route('admin.products.create') }}" class="btn-add-first">Add your first product</a>
                                             @endif
                                         </div>
                                     </td>
@@ -324,8 +324,7 @@
 
                         @if($page < $totalPages)
                             <a href="{{ buildURL(['page' => $page + 1]) }}" class="page-btn"><i class="fas fa-angle-right"></i></a>
-                            <a href="{{ buildURL(['page' => $totalPages]) }}" class="page-btn"><i
-                                    class="fas fa-angle-double-right"></i></a>
+                            <a href="{{ buildURL(['page' => $totalPages]) }}" class="page-btn"><i class="fas fa-angle-double-right"></i></a>
                         @endif
                     </div>
                 </div>
@@ -340,13 +339,13 @@
                 <h3><i class="fas fa-boxes"></i> Quick Stock Update</h3>
                 <button class="modal-close" onclick="closeStockModal()"><i class="fas fa-times"></i></button>
             </div>
-            <form method="POST" action="{{ route('admin.products.quick-stock') ?? '#' }}">
+            <form method="POST" action="{{ route('admin.products.quick-stock') }}">
                 @csrf
-                <input type="hidden" name="quick_stock_id" id="stockId">
+                <input type="hidden" name="id" id="stockId">
                 <div class="modal-body">
                     <p class="modal-product-name" id="stockProductName"></p>
                     <label class="modal-label">New Stock Quantity:</label>
-                    <input type="number" name="quick_stock_value" id="stockValue" min="0" class="modal-input" required>
+                    <input type="number" name="stock" id="stockValue" min="0" class="modal-input" required>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn-cancel" onclick="closeStockModal()">Cancel</button>
@@ -365,7 +364,6 @@
             if (e.key === 'Escape') {
                 if (document.activeElement.id === 'searchInput') document.activeElement.blur();
                 closeStockModal();
-                // Close any open action menu
                 document.querySelectorAll('.action-menu').forEach(menu => menu.classList.remove('open'));
             }
         });
@@ -414,32 +412,38 @@
             document.getElementById('stockModal').classList.remove('active');
         }
 
-        // ============================================
-        // ACTION DROPDOWN (Edit + Delete)
-        // ============================================
         function toggleActionMenu(event, productId) {
             event.stopPropagation();
 
-            // Close all other open menus
             document.querySelectorAll('.action-menu').forEach(menu => {
                 if (menu.id !== 'action-menu-' + productId) {
                     menu.classList.remove('open');
                 }
             });
 
-            // Toggle current menu
             const menu = document.getElementById('action-menu-' + productId);
             if (menu) {
                 menu.classList.toggle('open');
             }
         }
 
-        // Close menu when clicking outside
         document.addEventListener('click', function (e) {
             if (!e.target.closest('.action-dropdown')) {
                 document.querySelectorAll('.action-menu').forEach(menu => {
                     menu.classList.remove('open');
                 });
+            }
+        });
+
+        // AUTO HIDE SUCCESS ALERT
+        document.addEventListener('DOMContentLoaded', function () {
+            const successAlert = document.getElementById('successAlert');
+            if (successAlert) {
+                setTimeout(() => {
+                    successAlert.style.transition = 'opacity 0.5s ease';
+                    successAlert.style.opacity = '0';
+                    setTimeout(() => successAlert.remove(), 500);
+                }, 5000);
             }
         });
     </script>
@@ -542,25 +546,10 @@
             flex-shrink: 0;
         }
 
-        .stat-total {
-            background: #F0EADC;
-            color: #576238;
-        }
-
-        .stat-active {
-            background: #E8F0E3;
-            color: #576238;
-        }
-
-        .stat-low {
-            background: #FEF5E8;
-            color: #D4A054;
-        }
-
-        .stat-out {
-            background: #FEF0ED;
-            color: #C5705A;
-        }
+        .stat-total { background: #F0EADC; color: #576238; }
+        .stat-active { background: #E8F0E3; color: #576238; }
+        .stat-low { background: #FEF5E8; color: #D4A054; }
+        .stat-out { background: #FEF0ED; color: #C5705A; }
 
         .stat-value {
             display: block;
@@ -584,12 +573,32 @@
             padding: 0.875rem 1rem;
             border-radius: 0.5rem;
             font-size: 0.85rem;
+            position: relative;
+            animation: slideDown 0.3s ease;
         }
 
         .alert-success {
             background: #E8F0E3;
             border: 1px solid #576238;
             color: #576238;
+        }
+
+        .alert-close {
+            background: transparent;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            padding: 0.25rem;
+            margin-left: auto;
+            opacity: 0.6;
+            transition: opacity 0.2s ease;
+        }
+
+        .alert-close:hover { opacity: 1; }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .data-card {
@@ -632,9 +641,7 @@
             font-weight: 500;
         }
 
-        .search-form {
-            margin: 0;
-        }
+        .search-form { margin: 0; }
 
         .search-wrapper {
             position: relative;
@@ -672,9 +679,7 @@
             padding: 0.25rem;
         }
 
-        .clear-search:hover {
-            color: #C5705A;
-        }
+        .clear-search:hover { color: #C5705A; }
 
         .search-btn {
             background: #576238;
@@ -686,9 +691,7 @@
             cursor: pointer;
         }
 
-        .search-btn:hover {
-            background: #3E4A28;
-        }
+        .search-btn:hover { background: #3E4A28; }
 
         .filter-bar {
             padding: 0.75rem 1.25rem;
@@ -722,9 +725,7 @@
             cursor: pointer;
         }
 
-        .filter-select:hover {
-            border-color: #576238;
-        }
+        .filter-select:hover { border-color: #576238; }
 
         .btn-clear-filters {
             background: #FEF0ED;
@@ -738,10 +739,7 @@
             gap: 0.3rem;
         }
 
-        .btn-clear-filters:hover {
-            background: #C5705A;
-            color: white;
-        }
+        .btn-clear-filters:hover { background: #C5705A; color: white; }
 
         .bulk-actions {
             background: #E8F0E3;
@@ -779,9 +777,7 @@
             cursor: pointer;
         }
 
-        .btn-apply:hover {
-            background: #3E4A28;
-        }
+        .btn-apply:hover { background: #3E4A28; }
 
         .btn-cancel {
             background: white;
@@ -793,9 +789,7 @@
             cursor: pointer;
         }
 
-        .table-wrapper {
-            overflow-x: auto;
-        }
+        .table-wrapper { overflow-x: auto; }
 
         .data-table {
             width: 100%;
@@ -828,18 +822,11 @@
             vertical-align: middle;
         }
 
-        .data-table tbody tr:hover {
-            background: #FDF8F0;
-        }
+        .data-table tbody tr:hover { background: #FDF8F0; }
 
-        .data-table tbody tr:last-child td {
-            border-bottom: none;
-        }
+        .data-table tbody tr:last-child td { border-bottom: none; }
 
-        .col-checkbox {
-            width: 40px;
-            text-align: center;
-        }
+        .col-checkbox { width: 40px; text-align: center; }
 
         .col-checkbox input[type="checkbox"] {
             width: 16px;
@@ -848,40 +835,15 @@
             accent-color: #576238;
         }
 
-        .col-id {
-            width: 80px;
-        }
+        .col-id { width: 80px; }
+        .col-price { width: 100px; }
+        .col-category { width: 130px; }
+        .col-stock { width: 160px; }
+        .col-status { width: 100px; }
+        .col-actions { width: 70px; text-align: center; }
 
-        .col-price {
-            width: 100px;
-        }
-
-        .col-category {
-            width: 130px;
-        }
-
-        .col-stock {
-            width: 160px;
-        }
-
-        .col-status {
-            width: 100px;
-        }
-
-        .col-actions {
-            width: 70px;
-            text-align: center;
-        }
-
-        .product-name {
-            font-weight: 500;
-            color: #2C2B26;
-        }
-
-        .price-value {
-            font-weight: 600;
-            color: #576238;
-        }
+        .product-name { font-weight: 500; color: #2C2B26; }
+        .price-value { font-weight: 600; color: #576238; }
 
         .category-badge {
             display: inline-block;
@@ -901,20 +863,9 @@
             font-weight: 500;
         }
 
-        .stock-good {
-            background: #E8F0E3;
-            color: #576238;
-        }
-
-        .stock-low {
-            background: #FEF5E8;
-            color: #D4A054;
-        }
-
-        .stock-out {
-            background: #FEF0ED;
-            color: #C5705A;
-        }
+        .stock-good { background: #E8F0E3; color: #576238; }
+        .stock-low { background: #FEF5E8; color: #D4A054; }
+        .stock-out { background: #FEF0ED; color: #C5705A; }
 
         .quick-stock-btn {
             background: transparent;
@@ -945,27 +896,12 @@
             transition: all 0.2s ease;
         }
 
-        .status-active {
-            background: #E8F0E3;
-            color: #576238;
-        }
+        .status-active { background: #E8F0E3; color: #576238; }
+        .status-active:hover { background: #576238; color: white; }
 
-        .status-active:hover {
-            background: #576238;
-            color: white;
-        }
+        .status-inactive { background: #F0EADC; color: #9E9D97; }
+        .status-inactive:hover { background: #9E9D97; color: white; }
 
-        .status-inactive {
-            background: #F0EADC;
-            color: #9E9D97;
-        }
-
-        .status-inactive:hover {
-            background: #9E9D97;
-            color: white;
-        }
-
-        /* ============ ACTION DROPDOWN ============ */
         .action-dropdown {
             position: relative;
             display: inline-block;
@@ -1042,29 +978,13 @@
             color: #576238;
         }
 
-        .action-menu-item:hover {
-            background: #F0EADC;
-        }
+        .action-menu-item:hover { background: #F0EADC; }
+        .action-menu-item:hover i { color: #576238; }
 
-        .action-menu-item:hover i {
-            color: #576238;
-        }
-
-        .action-menu-danger {
-            color: #C5705A;
-        }
-
-        .action-menu-danger i {
-            color: #C5705A;
-        }
-
-        .action-menu-danger:hover {
-            background: #FEF0ED;
-        }
-
-        .action-menu-danger:hover i {
-            color: #A85444;
-        }
+        .action-menu-danger { color: #C5705A; }
+        .action-menu-danger i { color: #C5705A; }
+        .action-menu-danger:hover { background: #FEF0ED; }
+        .action-menu-danger:hover i { color: #A85444; }
 
         .pagination {
             display: flex;
@@ -1077,15 +997,8 @@
             gap: 0.5rem;
         }
 
-        .pagination-info {
-            font-size: 0.75rem;
-            color: #7A7A75;
-        }
-
-        .pagination-controls {
-            display: flex;
-            gap: 0.25rem;
-        }
+        .pagination-info { font-size: 0.75rem; color: #7A7A75; }
+        .pagination-controls { display: flex; gap: 0.25rem; }
 
         .page-btn {
             min-width: 32px;
@@ -1103,21 +1016,10 @@
             transition: all 0.2s ease;
         }
 
-        .page-btn:hover {
-            background: #F0EADC;
-            border-color: #576238;
-        }
+        .page-btn:hover { background: #F0EADC; border-color: #576238; }
+        .page-btn.active { background: #576238; color: white; border-color: #576238; font-weight: 600; }
 
-        .page-btn.active {
-            background: #576238;
-            color: white;
-            border-color: #576238;
-            font-weight: 600;
-        }
-
-        .empty-row td {
-            padding: 0 !important;
-        }
+        .empty-row td { padding: 0 !important; }
 
         .empty-state {
             text-align: center;
@@ -1131,10 +1033,7 @@
             display: block;
         }
 
-        .empty-state p {
-            color: #9E9D97;
-            margin-bottom: 0.75rem;
-        }
+        .empty-state p { color: #9E9D97; margin-bottom: 0.75rem; }
 
         .empty-state .clear-search-link,
         .empty-state .btn-add-first {
@@ -1152,7 +1051,6 @@
             border-radius: 0.5rem;
         }
 
-        /* MODAL */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -1164,9 +1062,7 @@
             padding: 1rem;
         }
 
-        .modal-overlay.active {
-            display: flex;
-        }
+        .modal-overlay.active { display: flex; }
 
         .modal-box {
             background: white;
@@ -1178,15 +1074,8 @@
         }
 
         @keyframes modalIn {
-            from {
-                transform: scale(0.95);
-                opacity: 0;
-            }
-
-            to {
-                transform: scale(1);
-                opacity: 1;
-            }
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
 
         .modal-header {
@@ -1217,13 +1106,9 @@
             padding: 0.25rem;
         }
 
-        .modal-close:hover {
-            color: #C5705A;
-        }
+        .modal-close:hover { color: #C5705A; }
 
-        .modal-body {
-            padding: 1.25rem;
-        }
+        .modal-body { padding: 1.25rem; }
 
         .modal-product-name {
             font-size: 0.85rem;

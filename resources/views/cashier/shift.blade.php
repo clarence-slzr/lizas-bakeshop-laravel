@@ -57,7 +57,8 @@
                     </div>
                     <div>
                         <h3>{{ $activeShift ? 'Current Shift' : 'Start New Shift' }}</h3>
-                        <p>{{ $activeShift ? 'You have an ongoing shift' : 'Begin your shift by entering starting cash' }}</p>
+                        <p>{{ $activeShift ? 'You have an ongoing shift' : 'Begin your shift by entering starting cash' }}
+                        </p>
                     </div>
                 </div>
 
@@ -68,7 +69,7 @@
                                 <i class="fas fa-play-circle"></i>
                             </div>
                             <h2>Shift in Progress</h2>
-                            <p class="active-subtitle">Nag-start ka noong</p>
+                            <p class="active-subtitle">You started back in</p>
                             <p class="active-time">
                                 {{ \Carbon\Carbon::parse($activeShift->shift_start)->format('l, F j, Y — h:i A') }}
                             </p>
@@ -76,7 +77,8 @@
                             <div class="active-stats">
                                 <div class="active-stat-item">
                                     <span class="active-stat-label">Starting Cash</span>
-                                    <span class="active-stat-value">₱{{ number_format($activeShift->starting_cash ?? 0, 2) }}</span>
+                                    <span
+                                        class="active-stat-value">₱{{ number_format($activeShift->starting_cash ?? 0, 2) }}</span>
                                 </div>
                                 <div class="active-stat-divider"></div>
                                 <div class="active-stat-item">
@@ -106,13 +108,15 @@
                                         <input type="number" name="ending_cash" id="ending_cash" step="0.01" min="0"
                                             placeholder="0.00" required autofocus>
                                     </div>
-                                    <small class="form-help">Bilangin ang laman ng cash drawer para sa accurate reconciliation.</small>
+                                    <small class="form-help">Count the contents of the cash drawer for accurate
+                                        reconciliation.</small>
                                 </div>
 
                                 <div class="form-group">
                                     <label for="shift_notes">Notes (Optional)</label>
                                     <div class="input-with-icon">
-                                        <textarea name="shift_notes" id="shift_notes" rows="2" placeholder="Anumang notes para sa shift na ito..."
+                                        <textarea name="shift_notes" id="shift_notes" rows="2"
+                                            placeholder="Any notes for this shift..."
                                             style="width: 100%; padding: 0.75rem; border: 1.5px solid #E3DCD0; border-radius: 0.5rem; font-family: inherit; font-size: 0.9rem; resize: vertical;"></textarea>
                                     </div>
                                 </div>
@@ -139,8 +143,8 @@
                                     <label for="starting_cash">Starting Cash (Float)</label>
                                     <div class="input-with-icon">
                                         <span class="currency-symbol">₱</span>
-                                        <input type="number" name="starting_cash" id="starting_cash" step="0.01"
-                                            min="0" placeholder="0.00" required autofocus>
+                                        <input type="number" name="starting_cash" id="starting_cash" step="0.01" min="0"
+                                            placeholder="0.00" required autofocus>
                                     </div>
                                     <small class="form-help">Enter the initial cash amount in the drawer.</small>
                                 </div>
@@ -221,7 +225,8 @@
                         <h3>Shift History</h3>
                         <p>Recent shifts you've completed</p>
                     </div>
-                    <span class="history-badge">Last {{ $shifts->count() }} shift{{ $shifts->count() != 1 ? 's' : '' }}</span>
+                    <span class="history-badge">Last {{ $shifts->count() }}
+                        shift{{ $shifts->count() != 1 ? 's' : '' }}</span>
                 </div>
             </div>
 
@@ -246,7 +251,6 @@
                                     $start = \Carbon\Carbon::parse($shift->shift_start);
                                     $end = $shift->shift_end ? \Carbon\Carbon::parse($shift->shift_end) : null;
 
-                                    // Duration with seconds
                                     $durationText = null;
                                     if ($end) {
                                         $totalSeconds = abs($end->diffInSeconds($start));
@@ -263,7 +267,6 @@
                                         }
                                     }
 
-                                    // Variance: actual vs expected
                                     $variance = null;
                                     if ($end && $shift->ending_cash !== null && $shift->starting_cash !== null) {
                                         $expectedCashShift = ($shift->starting_cash ?? 0) + ($shift->total_sales ?? 0);
@@ -293,7 +296,8 @@
                                     <td class="text-amount">₱{{ number_format($shift->ending_cash ?? 0, 2) }}</td>
                                     <td>
                                         @if($variance !== null)
-                                            <span class="variance-badge {{ $variance >= 0 ? 'variance-positive' : 'variance-negative' }}">
+                                            <span
+                                                class="variance-badge {{ $variance >= 0 ? 'variance-positive' : 'variance-negative' }}">
                                                 {{ $variance >= 0 ? '+' : '' }}₱{{ number_format($variance, 2) }}
                                             </span>
                                         @else
@@ -393,8 +397,15 @@
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
         }
 
         .alert {
@@ -425,7 +436,9 @@
         }
 
         @media (max-width: 900px) {
-            .main-grid { grid-template-columns: 1fr; }
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .action-card,
@@ -563,10 +576,13 @@
             font-weight: 600;
         }
 
+        /* ============ ACTIVE STAT VALUE — INTER FONT NA PARA TUGMA SA DASHBOARD ============ */
         .active-stat-value {
             font-size: 1.05rem;
             font-weight: 700;
             color: #2C2B26;
+            font-family: 'Inter', sans-serif;
+        
         }
 
         .active-stat-divider {
@@ -707,22 +723,39 @@
             flex-shrink: 0;
         }
 
-        .overview-icon-blue { background: #E8F0E3; color: #576238; }
-        .overview-icon-green { background: #E8F0E3; color: #3E4A28; }
-        .overview-icon-olive { background: #F0EADC; color: #576238; }
-        .overview-icon-gold { background: #FEF5E8; color: #D4A054; }
+        .overview-icon-blue {
+            background: #E8F0E3;
+            color: #576238;
+        }
+
+        .overview-icon-green {
+            background: #E8F0E3;
+            color: #3E4A28;
+        }
+
+        .overview-icon-olive {
+            background: #F0EADC;
+            color: #576238;
+        }
+
+        .overview-icon-gold {
+            background: #FEF5E8;
+            color: #D4A054;
+        }
 
         .overview-info {
             flex: 1;
             min-width: 0;
         }
 
+        /* ============ OVERVIEW VALUE — INTER FONT NA PARA TUGMA SA DASHBOARD ============ */
         .overview-value {
             display: block;
             font-size: 1.15rem;
             font-weight: 700;
             color: #2C2B26;
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
+            /* ← BINAGO: dating 'Playfair Display' */
             line-height: 1.2;
         }
 
@@ -842,11 +875,28 @@
             white-space: nowrap;
         }
 
-        .text-active { color: #D4A054; font-weight: 700; }
-        .text-amount { font-weight: 600; color: #2C2B26; }
-        .text-amount-strong { font-weight: 700; color: #576238; }
-        .text-center { text-align: center; }
-        .text-muted { color: #C4C3BC; }
+        .text-active {
+            color: #D4A054;
+            font-weight: 700;
+        }
+
+        .text-amount {
+            font-weight: 600;
+            color: #2C2B26;
+        }
+
+        .text-amount-strong {
+            font-weight: 700;
+            color: #576238;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-muted {
+            color: #C4C3BC;
+        }
 
         .variance-badge {
             display: inline-flex;
@@ -858,8 +908,15 @@
             white-space: nowrap;
         }
 
-        .variance-positive { background: #E8F0E3; color: #3E4A28; }
-        .variance-negative { background: #FEF0ED; color: #A85444; }
+        .variance-positive {
+            background: #E8F0E3;
+            color: #3E4A28;
+        }
+
+        .variance-negative {
+            background: #FEF0ED;
+            color: #A85444;
+        }
 
         .status-badge {
             display: inline-flex;
@@ -872,15 +929,24 @@
             white-space: nowrap;
         }
 
-        .status-closed { background: #F0EADC; color: #6B6A65; }
-        .status-active { background: #E8F0E3; color: #3E4A28; }
+        .status-closed {
+            background: #F0EADC;
+            color: #6B6A65;
+        }
+
+        .status-active {
+            background: #E8F0E3;
+            color: #3E4A28;
+        }
 
         .status-active i {
             font-size: 0.5rem;
             animation: pulse 2s ease-in-out infinite;
         }
 
-        .empty-row td { padding: 0 !important; }
+        .empty-row td {
+            padding: 0 !important;
+        }
 
         .empty-state {
             text-align: center;
@@ -916,11 +982,28 @@
         }
 
         @media (max-width: 768px) {
-            .history-header { flex-direction: column; align-items: stretch; }
-            .history-header-left { flex-wrap: wrap; }
-            .action-card-body { padding: 1.5rem 1rem; }
-            .active-stats { flex-direction: column; gap: 1rem; }
-            .active-stat-divider { width: 100%; height: 1px; }
+            .history-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .history-header-left {
+                flex-wrap: wrap;
+            }
+
+            .action-card-body {
+                padding: 1.5rem 1rem;
+            }
+
+            .active-stats {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .active-stat-divider {
+                width: 100%;
+                height: 1px;
+            }
         }
     </style>
 @endsection

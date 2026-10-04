@@ -458,24 +458,24 @@
                 const subtotal = item.price * item.qty;
                 currentSubtotal += subtotal;
                 cartBody.innerHTML += `
-                        <tr data-index="${index}">
-                            <td class="col-product">${escapeHtml(item.name)}</td>
-                            <td class="col-price">₱${item.price.toFixed(2)}</td>
-                            <td class="col-qty">
-                                <div class="qty-control">
-                                    <button class="qty-btn qty-minus" data-index="${index}">−</button>
-                                    <span class="qty-value">${item.qty}</span>
-                                    <button class="qty-btn qty-plus" data-index="${index}">+</button>
-                                </div>
-                            </td>
-                            <td class="col-subtotal">₱${subtotal.toFixed(2)}</td>
-                            <td class="col-action">
-                                <button class="remove-btn" data-index="${index}" title="Remove">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
+                            <tr data-index="${index}">
+                                <td class="col-product">${escapeHtml(item.name)}</td>
+                                <td class="col-price">₱${item.price.toFixed(2)}</td>
+                                <td class="col-qty">
+                                    <div class="qty-control">
+                                        <button class="qty-btn qty-minus" data-index="${index}">−</button>
+                                        <span class="qty-value">${item.qty}</span>
+                                        <button class="qty-btn qty-plus" data-index="${index}">+</button>
+                                    </div>
+                                </td>
+                                <td class="col-subtotal">₱${subtotal.toFixed(2)}</td>
+                                <td class="col-action">
+                                    <button class="remove-btn" data-index="${index}" title="Remove">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
             });
 
             document.querySelectorAll('.qty-minus').forEach(btn => {
@@ -672,8 +672,8 @@
         }
 
         /* ==================================================
-               FIX: OVERRIDE ANG MAIN CONTENT PADDING
-               ================================================== */
+                   FIX: OVERRIDE ANG MAIN CONTENT PADDING
+                   ================================================== */
         .pos-page-wrapper {
             background: #F0EADC;
             margin: -1.5rem;
@@ -684,8 +684,8 @@
         }
 
         /* ==================================================
-               BASE LAYOUT
-               ================================================== */
+                   BASE LAYOUT
+                   ================================================== */
         .pos-container {
             display: grid;
             grid-template-columns: minmax(0, 1fr) 420px;
@@ -697,8 +697,8 @@
         }
 
         /* ==================================================
-               PRODUCTS PANEL
-               ================================================== */
+                   PRODUCTS PANEL
+                   ================================================== */
         .products-panel {
             background: white;
             border: 1px solid #E3DCD0;
@@ -808,8 +808,8 @@
         }
 
         /* ==================================================
-               CATEGORY TABS
-               ================================================== */
+                   CATEGORY TABS
+                   ================================================== */
         .category-tabs {
             display: flex;
             gap: 0.5rem;
@@ -859,8 +859,8 @@
         }
 
         /* ==================================================
-               PRODUCTS GRID
-               ================================================== */
+                   PRODUCTS GRID
+                   ================================================== */
         .products-grid {
             flex: 1;
             display: grid;
@@ -890,8 +890,8 @@
         }
 
         /* ==================================================
-               PRODUCT CARD
-               ================================================== */
+                   PRODUCT CARD
+                   ================================================== */
         .product-card {
             background: #FDF8F0;
             border: 1px solid #E3DCD0;
@@ -956,12 +956,14 @@
             overflow: hidden;
         }
 
+        /* ============ PRODUCT PRICE — INTER FONT NA PARA TUGMA SA DASHBOARD ============ */
         .product-price {
             font-weight: 700;
             font-size: 1rem;
             color: #576238;
             margin-bottom: 0.3rem;
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
+            /* ← BINAGO: dating 'Playfair Display' */
         }
 
         .product-stock {
@@ -980,8 +982,8 @@
         }
 
         /* ==================================================
-               NO RESULTS
-               ================================================== */
+                   NO RESULTS
+                   ================================================== */
         .no-results {
             position: absolute;
             top: 50%;
@@ -1010,8 +1012,8 @@
         }
 
         /* ==================================================
-               CART PANEL
-               ================================================== */
+                   CART PANEL
+                   ================================================== */
         .cart-panel {
             background: white;
             border: 1px solid #E3DCD0;
@@ -1077,8 +1079,8 @@
         }
 
         /* ==================================================
-               CART ITEMS
-               ================================================== */
+                   CART ITEMS
+                   ================================================== */
         .cart-items {
             flex: 1 1 auto;
             overflow-y: auto;
@@ -1100,8 +1102,8 @@
         }
 
         /* ==================================================
-               EMPTY CART
-               ================================================== */
+                   EMPTY CART
+                   ================================================== */
         .empty-cart-state {
             text-align: center;
             padding: 3rem 1.5rem;
@@ -1136,8 +1138,8 @@
         }
 
         /* ==================================================
-               CART TABLE
-               ================================================== */
+                   CART TABLE
+                   ================================================== */
         .cart-table {
             width: 100%;
             border-collapse: collapse;
@@ -1248,8 +1250,8 @@
         }
 
         /* ==================================================
-               CART SUMMARY
-               ================================================== */
+                   CART SUMMARY
+                   ================================================== */
         .cart-summary {
             padding: 0.75rem 1rem;
             background: #FDF8F0;
@@ -1293,16 +1295,18 @@
             font-size: 0.9rem;
         }
 
+        /* ============ TOTAL VALUE — INTER FONT NA PARA TUGMA SA DASHBOARD ============ */
         .total-value {
             font-size: 1.15rem;
             font-weight: 700;
             color: #576238;
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
+            /* ← BINAGO: dating 'Playfair Display' */
         }
 
         /* ==================================================
-               CART ACTIONS
-               ================================================== */
+                   CART ACTIONS
+                   ================================================== */
         .cart-actions {
             padding: 0.875rem 1rem 1rem;
             border-top: 1px solid #E3DCD0;
@@ -1505,11 +1509,13 @@
             font-weight: 500;
         }
 
+        /* ============ CHANGE AMOUNT — INTER FONT NA PARA TUGMA SA DASHBOARD ============ */
         .change-amount {
             font-size: 1.05rem;
             color: #576238;
             font-weight: 700;
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
+            /* ← BINAGO: dating 'Playfair Display' */
         }
 
         .change-amount.positive {
@@ -1548,8 +1554,8 @@
         }
 
         /* ==================================================
-               TOAST
-               ================================================== */
+                   TOAST
+                   ================================================== */
         .toast-container {
             position: fixed;
             top: 1.5rem;
@@ -1611,8 +1617,8 @@
         }
 
         /* ==================================================
-               RESPONSIVE
-               ================================================== */
+                   RESPONSIVE
+                   ================================================== */
         @media (max-width: 1200px) {
             .pos-container {
                 grid-template-columns: minmax(0, 1fr) 380px;

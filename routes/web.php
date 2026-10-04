@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\NewsletterController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
@@ -14,15 +15,22 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ChartsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\PublicProductController;
 
 // ============================================
 // LANDING PAGE
 // ============================================
-Route::get('/', function () {
-    return view('landing');
-})->name('landing');
+Route::get('/', [HomeController::class, 'index'])->name('landing');
 
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+Route::post('/newsletter/subscribe', [NewsletterController::class, 'store'])->name('newsletter.subscribe');
+
+// ============================================
+// PUBLIC ROUTES (walang login)
+// ============================================
+Route::get('/products', [PublicProductController::class, 'index'])->name('products.index');
+Route::get('/products/{id}', [PublicProductController::class, 'show'])->name('products.show');
 
 // ============================================
 // AUTH ROUTES (from Laravel Breeze)
@@ -42,6 +50,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('password.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
     // ============================================
     // ADMIN ROUTES
     // ============================================
@@ -50,7 +59,7 @@ Route::middleware(['auth'])->group(function () {
         // Users
         Route::resource('users', UserController::class);
 
-        // Products
+        // Products (admin management)
         Route::resource('products', ProductController::class);
         Route::get('products/{id}/toggle', [ProductController::class, 'toggle'])->name('products.toggle');
         Route::post('products/quick-stock', [ProductController::class, 'quickStock'])->name('products.quick-stock');
@@ -67,8 +76,8 @@ Route::middleware(['auth'])->group(function () {
     // ============================================
     // ORDERS (shared - admin + cashier)
     // ============================================
-    Route::resource('orders', OrderController::class);
-    Route::get('orders/{id}/details', [OrderController::class, 'show'])->name('orders.details');
+    // Only index and show — walang update/store/destroy
+    Route::resource('orders', OrderController::class)->only(['index', 'show']);
     Route::patch('orders/{id}/complete', [OrderController::class, 'markComplete'])->name('orders.complete');
     Route::patch('orders/{id}/cancel', [OrderController::class, 'markCancelled'])->name('orders.cancel');
 
@@ -85,12 +94,17 @@ Route::middleware(['auth'])->group(function () {
         Route::get('shift', [ShiftController::class, 'index'])->name('shift');
         Route::post('shift/start', [ShiftController::class, 'start'])->name('shift.start');
         Route::post('shift/end', [ShiftController::class, 'end'])->name('shift.end');
+
+        // REFUND ROUTES
         Route::get('refund', [RefundController::class, 'index'])->name('refund');
+        Route::get('refund/search', [RefundController::class, 'search'])->name('refund.search');
         Route::post('refund/store', [RefundController::class, 'store'])->name('refund.store');
+
         Route::get('order-history', [OrderController::class, 'history'])->name('order-history');
     });
+
     // Logout confirmation page
     Route::get('/logout-confirm', function () {
-        return view('auth.logout-confirm');
+        return view('auth.confirm-logout');
     })->middleware('auth')->name('logout.confirm');
 });

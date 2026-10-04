@@ -3,44 +3,203 @@
 @section('content')
     <div class="dashboard-container">
 
-        <!-- ================= WELCOME HEADER ================= -->
-        <div class="welcome-header">
-            <div>
-                <h1>Welcome back, {{ auth()->user()->full_name ?? auth()->user()->username }}! 👋</h1>
-                <p class="welcome-subtitle">
-                    {{ date('l, F j, Y') }} • Here's what's happening at Liza's Bakeshop today
-                </p>
+        {{-- ============================================ --}}
+        {{-- HERO HEADER — Bakeshop Command Center --}}
+        {{-- ============================================ --}}
+        @php
+            $hour = (int) now()->format('G');
+            if ($hour < 12) {
+                $greeting = 'Good morning';
+                $greetingMessage = 'Have a great day po!';
+            } elseif ($hour < 18) {
+                $greeting = 'Good afternoon';
+                $greetingMessage = 'Hope the day is treating you well!';
+            } else {
+                $greeting = 'Good evening';
+                $greetingMessage = 'Time to wrap up and count the day\'s blessings.';
+            }
+
+            // Dynamic background base sa oras
+            if ($hour < 12) {
+                $greetingBg = 'linear-gradient(135deg, #FEF5E8, #FDF0D5)';
+                $greetingColor = '#D4A054';
+            } elseif ($hour < 18) {
+                $greetingBg = 'linear-gradient(135deg, #E8F0E3, #D8E5CF)';
+                $greetingColor = '#576238';
+            } else {
+                $greetingBg = 'linear-gradient(135deg, #E8E1D4, #D4C9BD)';
+                $greetingColor = '#6B4F00';
+            }
+        @endphp
+
+        <div class="hero-header" style="background: {{ $greetingBg }};">
+            <div class="hero-pattern"></div>
+            <div class="hero-content">
+                <div class="hero-left">
+                    <div class="greeting-icon" style="color: {{ $greetingColor }};">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <div class="hero-text">
+                        <div class="hero-greeting">{{ $greeting }},
+                            {{ auth()->user()->full_name ?? auth()->user()->username }}!</div>
+                        <div class="hero-subtitle">{{ $greetingMessage }}</div>
+                    </div>
+                </div>
+                <div class="hero-right">
+                    <div class="hero-date">
+                        <i class="fas fa-calendar-day"></i>
+                        <span>{{ date('l, F j, Y') }}</span>
+                    </div>
+                    <div class="hero-clock" id="liveClock">
+                        <i class="fas fa-clock"></i>
+                        <span>{{ date('h:i A') }}</span>
+                    </div>
+                    <a href="{{ auth()->user()->isAdmin() ? route('admin.sales-report') : route('cashier.pos') }}"
+                        class="hero-cta">
+                        <i class="fas {{ auth()->user()->isAdmin() ? 'fa-chart-line' : 'fa-cash-register' }}"></i>
+                        {{ auth()->user()->isAdmin() ? 'Reports' : 'POS' }}
+                    </a>
+                </div>
             </div>
-            @if(auth()->user()->isAdmin())
-                <div class="header-actions">
-                    <a href="{{ route('admin.sales-report') }}" class="btn-action btn-primary">
-                        <i class="fas fa-chart-line"></i> Reports
-                    </a>
-                </div>
-            @else
-                <div class="header-actions">
-                    <a href="{{ route('cashier.pos') }}" class="btn-action btn-primary">
-                        <i class="fas fa-cash-register"></i> POS
-                    </a>
-                </div>
-            @endif
         </div>
 
-        <!-- ================= SECTION 1: KPI CARDS ================= -->
+        {{-- ============================================ --}}
+        {{-- TODAY'S FOCUS — Actionable Insights --}}
+        {{-- ============================================ --}}
+        @php
+            $focusItems = [];
+
+            // 1. Pending orders
+            if ($pending > 0) {
+                $focusItems[] = [
+                    'icon' => 'fa-hourglass-half',
+                    'color' => '#D4A054',
+                    'bg' => '#FEF5E8',
+                    'label' => $pending . ' Pending Order' . ($pending > 1 ? 's' : ''),
+                    'description' => 'Waiting for confirmation — customer is waiting',
+                    'action_text' => 'Confirm Now',
+                    'action_url' => route('orders.index', ['status' => 'pending']),
+                    'priority' => 'high',
+                ];
+            }
+
+            // 2. Low stock items
+            if ($lowStock > 0) {
+                $focusItems[] = [
+                    'icon' => 'fa-exclamation-triangle',
+                    'color' => '#C5705A',
+                    'bg' => '#FEF0ED',
+                    'label' => $lowStock . ' Low Stock Item' . ($lowStock > 1 ? 's' : ''),
+                    'description' => 'Running low on inventory — restock soon',
+                    'action_text' => 'Manage Inventory',
+                    'action_url' => route('admin.products.index', ['stock' => 'low']),
+                    'priority' => 'medium',
+                ];
+            }
+
+            // 3. Today's sales
+            if ($today > 0) {
+                $focusItems[] = [
+                    'icon' => 'fa-chart-line',
+                    'color' => '#576238',
+                    'bg' => '#E8F0E3',
+                    'label' => '₱' . number_format($today, 2) . ' in sales today',
+                    'description' => $growth >= 0
+                        ? '▲ +' . number_format(abs($growth), 1) . '% vs yesterday — keep it up!'
+                        : '▼ -' . number_format(abs($growth), 1) . '% vs yesterday',
+                    'action_text' => 'View Report',
+                    'action_url' => route('admin.sales-report'),
+                    'priority' => 'low',
+                ];
+            } else {
+                $focusItems[] = [
+                    'icon' => 'fa-sun',
+                    'color' => '#576238',
+                    'bg' => '#E8F0E3',
+                    'label' => 'No sales yet today',
+                    'description' => 'Fresh baked goods are ready — start strong!',
+                    'action_text' => 'Open POS',
+                    'action_url' => route('cashier.pos'),
+                    'priority' => 'low',
+                ];
+            }
+
+            // 4. Best seller
+            if (isset($best) && count($best) > 0) {
+                $topProduct = $best[0];
+                $focusItems[] = [
+                    'icon' => 'fa-fire',
+                    'color' => '#D4A054',
+                    'bg' => '#FEF5E8',
+                    'label' => 'Best Seller: ' . Str::limit($topProduct->name, 30),
+                    'description' => $topProduct->sold . ' units sold • ₱' . number_format($topProduct->revenue, 2),
+                    'action_text' => 'View Products',
+                    'action_url' => route('admin.products.index'),
+                    'priority' => 'low',
+                ];
+            }
+        @endphp
+
+        @if(count($focusItems) > 0)
+            <div class="focus-section">
+                <div class="focus-header">
+                    <div class="focus-title">
+                        <div class="focus-icon-wrap">
+                            <i class="fas fa-bullseye"></i>
+                        </div>
+                        <div>
+                            <h2>Today's Focus</h2>
+                            <p>{{ count($focusItems) }} item{{ count($focusItems) > 1 ? 's' : '' }}
+                                need{{ count($focusItems) === 1 ? 's' : '' }} your attention</p>
+                        </div>
+                    </div>
+                    <span class="focus-badge">
+                        <i class="fas fa-sparkles"></i>
+                        Personalized for you
+                    </span>
+                </div>
+                <div class="focus-grid">
+                    @foreach($focusItems as $item)
+                        <a href="{{ $item['action_url'] }}" class="focus-card focus-priority-{{ $item['priority'] }}">
+                            <div class="focus-card-icon" style="background: {{ $item['bg'] }}; color: {{ $item['color'] }};">
+                                <i class="fas {{ $item['icon'] }}"></i>
+                            </div>
+                            <div class="focus-card-content">
+                                <div class="focus-card-label">{{ $item['label'] }}</div>
+                                <div class="focus-card-description">{{ $item['description'] }}</div>
+                            </div>
+                            <div class="focus-card-action">
+                                <span>{{ $item['action_text'] }}</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
+        {{-- ============================================ --}}
+        {{-- REAL-TIME STATUS --}}
+        {{-- ============================================ --}}
         <div class="section-label">
-            <i class="fas fa-bolt"></i> Real-Time Status
+            <div class="section-label-icon">
+                <i class="fas fa-bolt"></i>
+            </div>
+            <span>Real-Time Status</span>
+            <div class="section-label-line"></div>
         </div>
+
         <div class="stats-grid">
-            <div class="stat-card">
+            <a href="{{ route('orders.index', ['status' => 'pending']) }}" class="stat-card stat-card-link">
                 <div class="stat-icon pending-icon"><i class="fas fa-hourglass-half"></i></div>
                 <div class="stat-content">
                     <h3>Pending Orders</h3>
                     <p class="stat-number">{{ $pending }}</p>
-                    <a href="{{ route('orders.index', ['status' => 'pending']) }}" class="stat-link">View Orders <i
-                            class="fas fa-arrow-right"></i></a>
                 </div>
-            </div>
-            <div class="stat-card">
+                <div class="stat-arrow"><i class="fas fa-arrow-right"></i></div>
+            </a>
+
+            <a href="{{ route('admin.sales-report') }}" class="stat-card stat-card-link">
                 <div class="stat-icon sales-icon"><i class="fas fa-peso-sign"></i></div>
                 <div class="stat-content">
                     <h3>Today's Sales</h3>
@@ -54,71 +213,94 @@
                         <span class="growth-neutral">No change vs yesterday</span>
                     @endif
                 </div>
-            </div>
-            <div class="stat-card">
+                <div class="stat-arrow"><i class="fas fa-arrow-right"></i></div>
+            </a>
+
+            <a href="{{ route('orders.index') }}" class="stat-card stat-card-link">
                 <div class="stat-icon orders-icon"><i class="fas fa-receipt"></i></div>
                 <div class="stat-content">
                     <h3>Total Orders</h3>
                     <p class="stat-number">{{ $totalOrders }}</p>
-                    <a href="{{ route('orders.index') }}" class="stat-link">View All <i class="fas fa-arrow-right"></i></a>
                 </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon products-icon"><i class="fas fa-cake-candles"></i></div>
-                <div class="stat-content">
-                    <h3>Active Products</h3>
-                    <p class="stat-number">{{ $totalProducts }}</p>
-                    @if(auth()->user()->isAdmin())
-                        <a href="{{ route('admin.products.index') }}" class="stat-link">Manage <i
-                                class="fas fa-arrow-right"></i></a>
-                    @endif
+                <div class="stat-arrow"><i class="fas fa-arrow-right"></i></div>
+            </a>
+
+            @if(auth()->user()->isAdmin())
+                <a href="{{ route('admin.products.index') }}" class="stat-card stat-card-link">
+                    <div class="stat-icon products-icon"><i class="fas fa-cake-candles"></i></div>
+                    <div class="stat-content">
+                        <h3>Active Products</h3>
+                        <p class="stat-number">{{ $totalProducts }}</p>
+                    </div>
+                    <div class="stat-arrow"><i class="fas fa-arrow-right"></i></div>
+                </a>
+            @else
+                <div class="stat-card">
+                    <div class="stat-icon products-icon"><i class="fas fa-cake-candles"></i></div>
+                    <div class="stat-content">
+                        <h3>Active Products</h3>
+                        <p class="stat-number">{{ $totalProducts }}</p>
+                    </div>
                 </div>
-            </div>
+            @endif
         </div>
 
-        <!-- ================= SECTION 2: MINI STATS ================= -->
+        {{-- ============================================ --}}
+        {{-- MINI STATS --}}
+        {{-- ============================================ --}}
         <div class="stats-row">
-            <div class="mini-stat">
+            <a href="{{ route('orders.index', ['status' => 'completed']) }}" class="mini-stat mini-stat-link">
                 <div class="mini-stat-icon"><i class="fas fa-check-circle"></i></div>
                 <div class="mini-stat-info">
                     <span class="mini-stat-value">{{ $completedOrders }}</span>
                     <span class="mini-stat-label">Completed Orders</span>
                 </div>
-            </div>
-            <div class="mini-stat">
+            </a>
+
+            <a href="{{ route('admin.sales-report') }}" class="mini-stat mini-stat-link">
                 <div class="mini-stat-icon"><i class="fas fa-calendar-week"></i></div>
                 <div class="mini-stat-info">
                     <span class="mini-stat-value">₱{{ number_format($weeklySales ?: 0, 2) }}</span>
                     <span class="mini-stat-label">This Week</span>
                 </div>
-            </div>
-            <div class="mini-stat">
+            </a>
+
+            <a href="{{ route('admin.sales-report') }}" class="mini-stat mini-stat-link">
                 <div class="mini-stat-icon"><i class="fas fa-calendar-alt"></i></div>
                 <div class="mini-stat-info">
                     <span class="mini-stat-value">₱{{ number_format($monthlySales ?: 0, 2) }}</span>
                     <span class="mini-stat-label">This Month</span>
                 </div>
-            </div>
-            <div class="mini-stat warning">
+            </a>
+
+            <a href="{{ route('admin.products.index', ['stock' => 'low']) }}" class="mini-stat mini-stat-link warning">
                 <div class="mini-stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
                 <div class="mini-stat-info">
                     <span class="mini-stat-value">{{ $lowStock }}</span>
                     <span class="mini-stat-label">Low Stock Items</span>
                 </div>
-            </div>
-            <div class="mini-stat danger">
+            </a>
+
+            <a href="{{ route('admin.products.index', ['stock' => 'out']) }}" class="mini-stat mini-stat-link danger">
                 <div class="mini-stat-icon"><i class="fas fa-times-circle"></i></div>
                 <div class="mini-stat-info">
                     <span class="mini-stat-value">{{ $outOfStock }}</span>
                     <span class="mini-stat-label">Out of Stock</span>
                 </div>
-            </div>
+            </a>
         </div>
 
-        <!-- ================= SECTION 3: CHARTS ================= -->
+        {{-- ============================================ --}}
+        {{-- CHARTS --}}
+        {{-- ============================================ --}}
         <div class="section-label">
-            <i class="fas fa-chart-line"></i> Performance Overview
+            <div class="section-label-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <span>Performance Overview</span>
+            <div class="section-label-line"></div>
         </div>
+
         <div class="charts-section">
             <div class="dashboard-card chart-card">
                 <div class="card-header">
@@ -152,35 +334,43 @@
 
                     <h4 class="breakdown-title">Order Status Breakdown</h4>
                     <div class="breakdown-list">
-                        <div class="breakdown-item">
+                        <a href="{{ route('orders.index', ['status' => 'pending']) }}"
+                            class="breakdown-item breakdown-link">
                             <span class="dot dot-pending"></span>
                             <span class="breakdown-label">Pending</span>
                             <span class="breakdown-value">{{ $orderStats['pending'] }}</span>
-                        </div>
-                        <div class="breakdown-item">
+                        </a>
+                        <a href="{{ route('orders.index', ['status' => 'completed']) }}"
+                            class="breakdown-item breakdown-link">
                             <span class="dot dot-completed"></span>
                             <span class="breakdown-label">Completed</span>
                             <span class="breakdown-value">{{ $orderStats['completed'] }}</span>
-                        </div>
-                        <div class="breakdown-item">
+                        </a>
+                        <a href="{{ route('orders.index', ['status' => 'cancelled']) }}"
+                            class="breakdown-item breakdown-link">
                             <span class="dot dot-cancelled"></span>
                             <span class="breakdown-label">Cancelled</span>
                             <span class="breakdown-value">{{ $orderStats['cancelled'] }}</span>
-                        </div>
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- ================= SECTION 4: BUSINESS PULSE ================= -->
+        {{-- ============================================ --}}
+        {{-- BUSINESS PULSE --}}
+        {{-- ============================================ --}}
         <div class="section-label">
-            <i class="fas fa-heartbeat"></i> Business Pulse
+            <div class="section-label-icon">
+                <i class="fas fa-heartbeat"></i>
+            </div>
+            <span>Business Pulse</span>
+            <div class="section-label-line"></div>
         </div>
+
         <div class="business-pulse-grid">
             <div class="pulse-card">
-                <div class="pulse-icon pulse-peak">
-                    <i class="fas fa-clock"></i>
-                </div>
+                <div class="pulse-icon pulse-peak"><i class="fas fa-clock"></i></div>
                 <div class="pulse-content">
                     <span class="pulse-label">Peak Hour Today</span>
                     <span class="pulse-value">{{ $peakHour }}</span>
@@ -189,9 +379,7 @@
             </div>
 
             <div class="pulse-card">
-                <div class="pulse-icon pulse-avg">
-                    <i class="fas fa-calculator"></i>
-                </div>
+                <div class="pulse-icon pulse-avg"><i class="fas fa-calculator"></i></div>
                 <div class="pulse-content">
                     <span class="pulse-label">Avg Order Value</span>
                     <span class="pulse-value">₱{{ number_format($avgOrderValue, 2) }}</span>
@@ -200,9 +388,7 @@
             </div>
 
             <div class="pulse-card">
-                <div class="pulse-icon pulse-refund">
-                    <i class="fas fa-rotate-left"></i>
-                </div>
+                <div class="pulse-icon pulse-refund"><i class="fas fa-rotate-left"></i></div>
                 <div class="pulse-content">
                     <span class="pulse-label">Today's Refunds</span>
                     <span class="pulse-value">{{ $todayRefunds }}</span>
@@ -211,9 +397,7 @@
             </div>
 
             <div class="pulse-card">
-                <div class="pulse-icon pulse-refund-month">
-                    <i class="fas fa-calendar-times"></i>
-                </div>
+                <div class="pulse-icon pulse-refund-month"><i class="fas fa-calendar-times"></i></div>
                 <div class="pulse-content">
                     <span class="pulse-label">This Month Refunds</span>
                     <span class="pulse-value">{{ $monthlyRefunds }}</span>
@@ -222,10 +406,17 @@
             </div>
         </div>
 
-        <!-- ================= SECTION 5: PRODUCT PERFORMANCE ================= -->
+        {{-- ============================================ --}}
+        {{-- PRODUCT PERFORMANCE --}}
+        {{-- ============================================ --}}
         <div class="section-label">
-            <i class="fas fa-trophy"></i> Product Performance
+            <div class="section-label-icon">
+                <i class="fas fa-trophy"></i>
+            </div>
+            <span>Product Performance</span>
+            <div class="section-label-line"></div>
         </div>
+
         <div class="dashboard-two-columns">
             <div class="dashboard-card">
                 <div class="card-header">
@@ -297,10 +488,17 @@
             </div>
         </div>
 
-        <!-- ================= SECTION 6: CUSTOMER INSIGHTS ================= -->
+        {{-- ============================================ --}}
+        {{-- CUSTOMER INSIGHTS --}}
+        {{-- ============================================ --}}
         <div class="section-label">
-            <i class="fas fa-users"></i> Customer Insights
+            <div class="section-label-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <span>Customer Insights</span>
+            <div class="section-label-line"></div>
         </div>
+
         <div class="dashboard-two-columns">
             <div class="dashboard-card">
                 <div class="card-header">
@@ -371,12 +569,17 @@
             </div>
         </div>
 
-        <!-- ================= SECTION 7: OPERATIONAL ALERTS ================= -->
+        {{-- ============================================ --}}
+        {{-- OPERATIONAL ALERTS --}}
+        {{-- ============================================ --}}
         <div class="section-label">
-            <i class="fas fa-bell"></i> Operational Alerts
+            <div class="section-label-icon">
+                <i class="fas fa-bell"></i>
+            </div>
+            <span>Operational Alerts</span>
+            <div class="section-label-line"></div>
         </div>
 
-        <!-- RECENT ORDERS -->
         <div class="dashboard-card full-width-card">
             <div class="card-header">
                 <h3><i class="fas fa-clock"></i> Recent Orders</h3>
@@ -422,7 +625,6 @@
             </div>
         </div>
 
-        <!-- INVENTORY ALERTS -->
         <div class="dashboard-card full-width-card">
             <div class="card-header">
                 <h3><i class="fas fa-boxes"></i> Inventory Alerts</h3>
@@ -473,59 +675,79 @@
 
     </div>
 
-    <!-- ================= CHART SCRIPT ================= -->
+    {{-- ============================================ --}}
+    {{-- CHART SCRIPT + LIVE CLOCK --}}
+    {{-- ============================================ --}}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Sales Chart
             const ctx = document.getElementById('salesChart');
-            if (!ctx) return;
-
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: @json($labels),
-                    datasets: [{
-                        label: 'Sales (₱)',
-                        data: @json($salesTrend),
-                        borderColor: '#576238',
-                        backgroundColor: 'rgba(87, 98, 56, 0.1)',
-                        borderWidth: 3,
-                        tension: 0.4,
-                        fill: true,
-                        pointBackgroundColor: '#576238',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 5,
-                        pointHoverRadius: 7
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: '#2C2B26',
-                            padding: 12,
-                            callbacks: {
-                                label: function (ctx) {
-                                    return '₱' + parseFloat(ctx.raw).toLocaleString('en-PH', { minimumFractionDigits: 2 });
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: @json($labels),
+                        datasets: [{
+                            label: 'Sales (₱)',
+                            data: @json($salesTrend),
+                            borderColor: '#576238',
+                            backgroundColor: 'rgba(87, 98, 56, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.4,
+                            fill: true,
+                            pointBackgroundColor: '#576238',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 7
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: '#2C2B26',
+                                padding: 12,
+                                callbacks: {
+                                    label: function (ctx) {
+                                        return '₱' + parseFloat(ctx.raw).toLocaleString('en-PH', { minimumFractionDigits: 2 });
+                                    }
                                 }
                             }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { callback: function (v) { return '₱' + v.toLocaleString(); }, color: '#9E9D97' },
-                            grid: { color: '#F0EADC' }
                         },
-                        x: {
-                            ticks: { color: '#9E9D97' },
-                            grid: { display: false }
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { callback: function (v) { return '₱' + v.toLocaleString(); }, color: '#9E9D97' },
+                                grid: { color: '#F0EADC' }
+                            },
+                            x: {
+                                ticks: { color: '#9E9D97' },
+                                grid: { display: false }
+                            }
                         }
                     }
+                });
+            }
+
+            // Live Clock
+            const clockEl = document.getElementById('liveClock');
+            if (clockEl) {
+                const clockSpan = clockEl.querySelector('span');
+                function updateClock() {
+                    const now = new Date();
+                    let hours = now.getHours();
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    const ampm = hours >= 12 ? 'PM' : 'AM';
+                    hours = hours % 12;
+                    hours = hours ? hours : 12;
+                    clockSpan.textContent = String(hours).padStart(2, '0') + ':' + minutes + ' ' + ampm;
                 }
-            });
+                updateClock();
+                setInterval(updateClock, 1000);
+            }
         });
     </script>
 
@@ -537,81 +759,410 @@
             padding-bottom: 2rem;
         }
 
-        /* ============ WELCOME HEADER ============ */
-        .welcome-header {
+        /* ============================================ */
+        /* HERO HEADER                                  */
+        /* ============================================ */
+        .hero-header {
+            border-radius: 1rem;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(87, 98, 56, 0.15);
+            box-shadow: 0 4px 20px rgba(87, 98, 56, 0.08);
+        }
+
+        .hero-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.5) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.3) 0%, transparent 40%);
+            pointer-events: none;
+        }
+
+        .hero-content {
             display: flex;
             justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-left {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .greeting-icon {
+            width: 72px;
+            height: 72px;
+            background: rgba(255, 255, 255, 0.75);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.25rem;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .hero-text {
+            min-width: 0;
+        }
+
+        .hero-greeting {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2C2B26;
+            margin-bottom: 0.25rem;
+            line-height: 1.2;
+        }
+
+        .hero-subtitle {
+            font-size: 0.85rem;
+            color: #6B6A65;
+            font-style: italic;
+        }
+
+        .hero-right {
+            display: flex;
             align-items: center;
             gap: 1rem;
             flex-wrap: wrap;
         }
 
-        .welcome-header h1 {
-            font-family: 'Inter', sans-serif;
-            font-size: 1.35rem;
-            font-weight: 600;
-            color: #2C2B26;
-            margin-bottom: 0.3rem;
-        }
-
-        .welcome-subtitle {
-            font-size: 0.78rem;
-            color: #9E9D97;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
-
-        /* ============ SECTION LABEL ============ */
-        .section-label {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.68rem;
-            font-weight: 700;
-            color: #6B6A65;
-            text-transform: uppercase;
-            letter-spacing: 1.2px;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid #E3DCD0;
-            margin-top: 0.25rem;
-        }
-
-        .section-label i {
-            color: #576238;
-            font-size: 0.8rem;
-        }
-
-        /* QUICK ACTIONS */
-        .btn-action {
+        .hero-date,
+        .hero-clock {
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.55rem 1.1rem;
-            border-radius: 0.5rem;
-            font-size: 0.78rem;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 0.55rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.8rem;
             font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s ease;
-            border: 1px solid transparent;
-            font-family: inherit;
+            color: #576238;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
 
-        .btn-primary {
+        .hero-date i,
+        .hero-clock i {
+            color: #D4A054;
+        }
+
+        .hero-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #576238;
+            color: white;
+            padding: 0.6rem 1.25rem;
+            border-radius: 2rem;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(87, 98, 56, 0.2);
+        }
+
+        .hero-cta:hover {
+            background: #3E4A28;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(87, 98, 56, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .hero-header {
+                padding: 1.5rem 1.25rem;
+            }
+
+            .hero-greeting {
+                font-size: 1.15rem;
+            }
+
+            .greeting-icon {
+                width: 56px;
+                height: 56px;
+                font-size: 1.75rem;
+            }
+
+            .hero-right {
+                width: 100%;
+            }
+
+            .hero-cta {
+                flex: 1;
+                justify-content: center;
+            }
+        }
+
+        /* ============================================ */
+        /* TODAY'S FOCUS                                */
+        /* ============================================ */
+        .focus-section {
+            background: white;
+            border: 2px solid #D4A054;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(212, 160, 84, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .focus-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(212, 160, 84, 0.05) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .focus-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 1;
+        }
+
+        .focus-title {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+        }
+
+        .focus-icon-wrap {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #D4A054, #B8893A);
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 12px rgba(212, 160, 84, 0.3);
+        }
+
+        .focus-title h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #2C2B26;
+            margin: 0 0 0.15rem 0;
+        }
+
+        .focus-title p {
+            font-size: 0.75rem;
+            color: #9E9D97;
+            margin: 0;
+        }
+
+        .focus-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: linear-gradient(135deg, #FEF5E8, #FDF0D5);
+            color: #B8893A;
+            padding: 0.4rem 0.875rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            border: 1px solid #F8E5C5;
+        }
+
+        .focus-badge i {
+            color: #D4A054;
+        }
+
+        .focus-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.875rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        @media (max-width: 900px) {
+            .focus-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .focus-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: #FDFBF7;
+            border: 1px solid #F0EADC;
+            border-radius: 0.75rem;
+            padding: 1rem 1.25rem;
+            transition: all 0.25s ease;
+            text-decoration: none;
+            color: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .focus-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: #D4A054;
+            transition: width 0.25s ease;
+        }
+
+        .focus-card.focus-priority-high::before {
+            background: #C5705A;
+        }
+
+        .focus-card.focus-priority-medium::before {
+            background: #D4A054;
+        }
+
+        .focus-card.focus-priority-low::before {
+            background: #576238;
+        }
+
+        .focus-card:hover {
+            transform: translateX(6px);
+            border-color: #D4A054;
+            background: white;
+            box-shadow: 0 8px 20px rgba(212, 160, 84, 0.15);
+        }
+
+        .focus-card:hover::before {
+            width: 6px;
+        }
+
+        .focus-card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .focus-card-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .focus-card-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #2C2B26;
+            line-height: 1.3;
+            margin-bottom: 0.2rem;
+        }
+
+        .focus-card-description {
+            font-size: 0.72rem;
+            color: #9E9D97;
+            line-height: 1.4;
+        }
+
+        .focus-card-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #576238;
+            padding: 0.5rem 0.875rem;
+            border-radius: 2rem;
+            background: #F0EADC;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .focus-card-action:hover {
             background: #576238;
             color: white;
         }
 
-        .btn-primary:hover {
-            background: #46502d;
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(87, 98, 56, 0.2);
+        .focus-card-action i {
+            transition: transform 0.2s ease;
         }
 
-        /* STATS CARDS */
+        .focus-card:hover .focus-card-action i {
+            transform: translateX(3px);
+        }
+
+        @media (max-width: 640px) {
+            .focus-card {
+                flex-wrap: wrap;
+            }
+
+            .focus-card-action {
+                width: 100%;
+                justify-content: center;
+                margin-top: 0.5rem;
+            }
+        }
+
+        /* ============================================ */
+        /* SECTION LABEL                                */
+        /* ============================================ */
+        .section-label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .section-label-icon {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #F0EADC, #E8E1D4);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #576238;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .section-label span {
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: #6B6A65;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .section-label-line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, #E3DCD0, transparent);
+        }
+
+        /* ============================================ */
+        /* STATS CARDS                                  */
+        /* ============================================ */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -633,14 +1184,16 @@
         .stat-card {
             background: white;
             border: 1px solid #E3DCD0;
-            border-radius: 0.75rem;
+            border-radius: 0.875rem;
             padding: 1.25rem;
             display: flex;
             align-items: center;
             gap: 1rem;
-            transition: all 0.2s ease;
+            transition: all 0.25s ease;
             position: relative;
             overflow: hidden;
+            text-decoration: none;
+            color: inherit;
         }
 
         .stat-card::before {
@@ -650,25 +1203,42 @@
             left: 0;
             right: 0;
             height: 3px;
-            background: #576238;
+            background: linear-gradient(90deg, #576238, #7A8B4F);
             opacity: 0;
             transition: opacity 0.25s ease;
         }
 
         .stat-card:hover {
-            transform: translateY(-3px);
+            transform: translateY(-4px);
             border-color: #576238;
-            box-shadow: 0 8px 24px rgba(87, 98, 56, 0.1);
+            box-shadow: 0 12px 28px rgba(87, 98, 56, 0.12);
         }
 
         .stat-card:hover::before {
             opacity: 1;
         }
 
+        .stat-arrow {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #D4C9BD;
+            font-size: 0.8rem;
+            opacity: 0;
+            transition: all 0.2s ease;
+        }
+
+        .stat-card-link:hover .stat-arrow {
+            opacity: 1;
+            color: #576238;
+            transform: translateY(-50%) translateX(4px);
+        }
+
         .stat-icon {
             width: 52px;
             height: 52px;
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -677,22 +1247,22 @@
         }
 
         .pending-icon {
-            background: #FEF5E8;
+            background: linear-gradient(135deg, #FEF5E8, #FDF0D5);
             color: #D4A054;
         }
 
         .sales-icon {
-            background: #E8F0E3;
+            background: linear-gradient(135deg, #E8F0E3, #D8E5CF);
             color: #576238;
         }
 
         .orders-icon {
-            background: #F0EADC;
+            background: linear-gradient(135deg, #F0EADC, #E8E1D4);
             color: #576238;
         }
 
         .products-icon {
-            background: #E8E1D4;
+            background: linear-gradient(135deg, #E8E1D4, #D4C9BD);
             color: #576238;
         }
 
@@ -703,38 +1273,29 @@
         .stat-content h3 {
             font-size: 0.65rem;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.6px;
             color: #9E9D97;
-            margin-bottom: 0.2rem;
-            font-weight: 600;
+            margin-bottom: 0.25rem;
+            font-weight: 700;
         }
 
         .stat-number {
-            font-size: 1.4rem;
-            font-weight: 700;
+            font-size: 1.5rem;
+            font-weight: 800;
             color: #2C2B26;
             margin-bottom: 0.25rem;
             line-height: 1.2;
             font-family: 'Inter', sans-serif;
+            transition: color 0.2s ease;
         }
 
-        .stat-link {
-            font-size: 0.7rem;
+        .stat-card-link:hover .stat-number {
             color: #576238;
-            text-decoration: none;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-
-        .stat-link:hover {
-            text-decoration: underline;
         }
 
         .growth-indicator {
             font-size: 0.7rem;
-            font-weight: 600;
+            font-weight: 700;
             display: inline-flex;
             align-items: center;
             gap: 0.25rem;
@@ -754,7 +1315,9 @@
             font-style: italic;
         }
 
-        /* MINI STATS */
+        /* ============================================ */
+        /* MINI STATS                                   */
+        /* ============================================ */
         .stats-row {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -776,17 +1339,24 @@
         .mini-stat {
             background: white;
             border: 1px solid #E3DCD0;
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
             padding: 0.875rem 1rem;
             display: flex;
             align-items: center;
             gap: 0.75rem;
             transition: all 0.2s ease;
+            text-decoration: none;
+            color: inherit;
         }
 
         .mini-stat:hover {
             border-color: #576238;
             transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(87, 98, 56, 0.08);
+        }
+
+        .mini-stat-link:hover {
+            background: #FDFBF7;
         }
 
         .mini-stat-icon {
@@ -819,7 +1389,7 @@
 
         .mini-stat-value {
             font-size: 0.92rem;
-            font-weight: 600;
+            font-weight: 700;
             color: #2C2B26;
             display: block;
             line-height: 1.3;
@@ -833,10 +1403,12 @@
             color: #9E9D97;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            font-weight: 600;
+            font-weight: 700;
         }
 
-        /* CHARTS SECTION */
+        /* ============================================ */
+        /* CHARTS SECTION                               */
+        /* ============================================ */
         .charts-section {
             display: grid;
             grid-template-columns: 2fr 1fr;
@@ -869,12 +1441,12 @@
             color: #9E9D97;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .target-value {
             font-size: 0.85rem;
-            font-weight: 700;
+            font-weight: 800;
             color: #2C2B26;
         }
 
@@ -889,7 +1461,7 @@
 
         .target-progress-bar {
             height: 100%;
-            background: linear-gradient(90deg, #576238, #7A8B4F);
+            background: linear-gradient(90deg, #576238, #7A8B4F, #D4A054);
             border-radius: 2rem;
             transition: width 0.8s ease;
         }
@@ -910,7 +1482,7 @@
             font-size: 0.8rem;
             color: #2C2B26;
             margin-bottom: 0.75rem;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .breakdown-list {
@@ -924,6 +1496,19 @@
             align-items: center;
             gap: 0.5rem;
             font-size: 0.8rem;
+            text-decoration: none;
+            color: inherit;
+            padding: 0.4rem 0.5rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .breakdown-link:hover {
+            background: #FDF8F0;
+        }
+
+        .breakdown-link:hover .breakdown-value {
+            color: #576238;
         }
 
         .dot {
@@ -935,14 +1520,17 @@
 
         .dot-pending {
             background: #D4A054;
+            box-shadow: 0 0 6px rgba(212, 160, 84, 0.5);
         }
 
         .dot-completed {
             background: #576238;
+            box-shadow: 0 0 6px rgba(87, 98, 56, 0.5);
         }
 
         .dot-cancelled {
             background: #C5705A;
+            box-shadow: 0 0 6px rgba(197, 112, 90, 0.5);
         }
 
         .breakdown-label {
@@ -951,11 +1539,14 @@
         }
 
         .breakdown-value {
-            font-weight: 700;
+            font-weight: 800;
             color: #2C2B26;
+            transition: color 0.2s ease;
         }
 
-        /* BUSINESS PULSE */
+        /* ============================================ */
+        /* BUSINESS PULSE                               */
+        /* ============================================ */
         .business-pulse-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -1003,22 +1594,22 @@
         }
 
         .pulse-peak {
-            background: #FEF5E8;
+            background: linear-gradient(135deg, #FEF5E8, #FDF0D5);
             color: #D4A054;
         }
 
         .pulse-avg {
-            background: #E8F0E3;
+            background: linear-gradient(135deg, #E8F0E3, #D8E5CF);
             color: #576238;
         }
 
         .pulse-refund {
-            background: #FEF0ED;
+            background: linear-gradient(135deg, #FEF0ED, #FCE8E6);
             color: #C5705A;
         }
 
         .pulse-refund-month {
-            background: #F0EADC;
+            background: linear-gradient(135deg, #F0EADC, #E8E1D4);
             color: #576238;
         }
 
@@ -1034,12 +1625,12 @@
             color: #9E9D97;
             text-transform: uppercase;
             letter-spacing: 0.4px;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .pulse-value {
             font-size: 1rem;
-            font-weight: 700;
+            font-weight: 800;
             color: #2C2B26;
             font-family: 'Inter', sans-serif;
             line-height: 1.2;
@@ -1050,7 +1641,9 @@
             color: #9E9D97;
         }
 
-        /* TWO COLUMNS */
+        /* ============================================ */
+        /* TWO COLUMNS                                  */
+        /* ============================================ */
         .dashboard-two-columns {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -1063,11 +1656,13 @@
             }
         }
 
-        /* CARDS */
+        /* ============================================ */
+        /* CARDS                                        */
+        /* ============================================ */
         .dashboard-card {
             background: white;
             border: 1px solid #E3DCD0;
-            border-radius: 0.75rem;
+            border-radius: 0.875rem;
             overflow: hidden;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
         }
@@ -1077,7 +1672,7 @@
         }
 
         .card-header {
-            background: #FDF8F0;
+            background: linear-gradient(135deg, #FDF8F0 0%, #F7F0E4 100%);
             padding: 1rem 1.25rem;
             border-bottom: 1px solid #E3DCD0;
             display: flex;
@@ -1089,13 +1684,13 @@
 
         .card-header h3 {
             font-size: 0.85rem;
-            font-weight: 600;
+            font-weight: 700;
             color: #2C2B26;
             margin: 0;
         }
 
         .card-header h3 i {
-            color: #576238;
+            color: #D4A054;
             margin-right: 0.5rem;
         }
 
@@ -1105,7 +1700,7 @@
             padding: 0.25rem 0.75rem;
             border-radius: 2rem;
             font-size: 0.62rem;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .badge-warning {
@@ -1118,7 +1713,7 @@
             padding: 0.35rem 0.85rem;
             border-radius: 2rem;
             font-size: 0.68rem;
-            font-weight: 600;
+            font-weight: 700;
             text-decoration: none;
             transition: all 0.2s ease;
             display: inline-flex;
@@ -1131,7 +1726,9 @@
             color: white;
         }
 
-        /* TABLES */
+        /* ============================================ */
+        /* TABLES                                       */
+        /* ============================================ */
         .table-wrapper {
             overflow-x: auto;
         }
@@ -1154,8 +1751,12 @@
             color: #576238;
             font-size: 0.68rem;
             text-transform: uppercase;
-            font-weight: 600;
+            font-weight: 800;
             letter-spacing: 0.5px;
+        }
+
+        .data-table tbody tr {
+            transition: background 0.2s ease;
         }
 
         .data-table tbody tr:hover {
@@ -1172,7 +1773,7 @@
 
         .order-link {
             color: #576238;
-            font-weight: 600;
+            font-weight: 700;
             text-decoration: none;
             font-family: 'SF Mono', monospace;
             font-size: 0.78rem;
@@ -1182,7 +1783,9 @@
             text-decoration: underline;
         }
 
-        /* RANK BADGES */
+        /* ============================================ */
+        /* RANK BADGES                                  */
+        /* ============================================ */
         .rank-badge {
             display: inline-block;
             width: 26px;
@@ -1191,33 +1794,36 @@
             text-align: center;
             border-radius: 50%;
             font-size: 0.68rem;
-            font-weight: 700;
+            font-weight: 800;
             background: #F0EADC;
             color: #576238;
         }
 
         .rank-1 {
-            background: #FFD700;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
             color: #6B4F00;
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
         }
 
         .rank-2 {
-            background: #C0C0C0;
+            background: linear-gradient(135deg, #E0E0E0, #C0C0C0);
             color: #3D3D3D;
         }
 
         .rank-3 {
-            background: #CD7F32;
+            background: linear-gradient(135deg, #E8A57A, #CD7F32);
             color: #FFF;
         }
 
-        /* STATUS BADGES */
+        /* ============================================ */
+        /* STATUS BADGES                                */
+        /* ============================================ */
         .status-badge {
             display: inline-block;
             padding: 0.25rem 0.75rem;
             border-radius: 2rem;
             font-size: 0.68rem;
-            font-weight: 600;
+            font-weight: 700;
             min-width: 85px;
             text-align: center;
         }
@@ -1243,19 +1849,23 @@
             color: #8A8A85;
         }
 
-        /* BUTTONS */
+        /* ============================================ */
+        /* BUTTONS                                      */
+        /* ============================================ */
         .btn-small {
             background: #576238;
             color: white;
             padding: 0.3rem 0.7rem;
-            border-radius: 0.25rem;
+            border-radius: 0.4rem;
             font-size: 0.65rem;
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 700;
+            transition: all 0.2s ease;
         }
 
         .btn-small:hover {
             background: #46502d;
+            transform: translateY(-1px);
         }
 
         .text-muted {
@@ -1264,7 +1874,9 @@
             font-style: italic;
         }
 
-        /* CUSTOMER INSIGHTS */
+        /* ============================================ */
+        /* CUSTOMER INSIGHTS                            */
+        /* ============================================ */
         .insights-body {
             padding: 1rem 1.25rem;
             display: flex;
@@ -1277,22 +1889,29 @@
             align-items: center;
             gap: 1rem;
             padding: 0.75rem;
-            background: #FDF8F0;
-            border-radius: 0.5rem;
-            border-left: 3px solid #576238;
+            background: linear-gradient(135deg, #FDF8F0 0%, #F7F0E4 100%);
+            border-radius: 0.625rem;
+            border-left: 4px solid #576238;
+            transition: all 0.2s ease;
+        }
+
+        .insight-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(87, 98, 56, 0.08);
         }
 
         .insight-icon {
-            width: 40px;
-            height: 40px;
-            background: #E8F0E3;
+            width: 44px;
+            height: 44px;
+            background: white;
             color: #576238;
             border-radius: 0.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1rem;
+            font-size: 1.1rem;
             flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
         }
 
         .insight-icon.repeat {
@@ -1311,8 +1930,8 @@
         }
 
         .insight-value {
-            font-size: 0.95rem;
-            font-weight: 700;
+            font-size: 1rem;
+            font-weight: 800;
             color: #2C2B26;
             line-height: 1.2;
             font-family: 'Inter', sans-serif;
@@ -1323,7 +1942,7 @@
             color: #9E9D97;
             text-transform: uppercase;
             letter-spacing: 0.4px;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .empty-row {
@@ -1332,18 +1951,12 @@
             padding: 2rem !important;
         }
 
-        /* RESPONSIVE */
+        /* ============================================ */
+        /* RESPONSIVE                                   */
+        /* ============================================ */
         @media (max-width: 640px) {
-            .welcome-header h1 {
-                font-size: 1.15rem;
-            }
-
-            .section-label {
-                font-size: 0.62rem;
-            }
-
             .stat-number {
-                font-size: 1.2rem;
+                font-size: 1.25rem;
             }
 
             .pulse-value {

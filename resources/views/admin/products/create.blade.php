@@ -41,13 +41,21 @@
                         <small class="form-hint">Enter the full product name as it appears to customers</small>
                     </div>
 
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description" rows="4"
+                            placeholder="Enter product description...">{{ old('description') }}</textarea>
+                        <small class="form-hint">Describe the product for customers to see on the product page</small>
+                    </div>
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="price">Price <span class="required">*</span></label>
-                            <div class="input-with-icon">
-                                <span class="input-icon">₱</span>
+                            <div style="position: relative; display: flex; align-items: center;">
+                                <span
+                                    style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #9E9D97; font-size: 0.875rem; pointer-events: none; z-index: 2;">₱</span>
                                 <input type="number" id="price" name="price" step="0.01" min="0" value="{{ old('price') }}"
-                                    required placeholder="0.00">
+                                    required placeholder="0.00" style="padding-left: 32px !important; width: 100%;">
                             </div>
                             <small class="form-hint">Price in Philippine Peso (PHP)</small>
                         </div>
@@ -68,22 +76,41 @@
                             <option value="Cakes" {{ old('category') == 'Cakes' ? 'selected' : '' }}>Cakes</option>
                             <option value="Pastries" {{ old('category') == 'Pastries' ? 'selected' : '' }}>Pastries</option>
                             <option value="Cookies" {{ old('category') == 'Cookies' ? 'selected' : '' }}>Cookies</option>
+                            <option value="Donuts" {{ old('category') == 'Donuts' ? 'selected' : '' }}>Donuts</option>
                             <option value="Others" {{ old('category') == 'Others' ? 'selected' : '' }}>Others</option>
                         </select>
                         <small class="form-hint">Select the product category for organization</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="image">Product Image</label>
+                        <input type="file" id="image" name="image" accept="image/*">
+                        <small class="form-hint">Upload a product photo (JPG, PNG, max 2MB). Optional.</small>
                     </div>
                 </div>
 
                 <div class="form-section">
                     <h3 class="section-title">Availability Settings</h3>
 
-                    <div class="form-group checkbox-group">
-                        <label class="checkbox-label">
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <strong>Available for purchase</strong>
+                            <small>When unchecked, this product will be hidden from POS</small>
+                        </div>
+                        <label class="toggle-switch">
                             <input type="checkbox" name="is_available" value="1" checked>
-                            <span class="checkbox-text">
-                                <strong>Available for purchase</strong>
-                                <small>When unchecked, this product will be hidden from POS</small>
-                            </span>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <strong>Mark as Best Seller</strong>
+                            <small>Best sellers are featured on the landing page</small>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="is_best_seller" value="1" {{ old('is_best_seller') ? 'checked' : '' }}>
+                            <span class="toggle-slider"></span>
                         </label>
                     </div>
 
@@ -91,8 +118,7 @@
                         <i class="fas fa-info-circle"></i>
                         <div class="info-content">
                             <strong>Note:</strong> Products marked as "Available" will appear in the POS system for cashiers
-                            to sell.
-                            You can always edit this later.
+                            to sell. Best Sellers will appear on the landing page.
                         </div>
                     </div>
                 </div>
@@ -238,8 +264,10 @@
             margin-left: 0.25rem;
         }
 
-        .form-group input,
-        .form-group select {
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group select,
+        .form-group textarea {
             width: 100%;
             padding: 0.625rem 0.875rem;
             border: 1px solid #E3DCD0;
@@ -248,30 +276,15 @@
             font-family: 'Inter', sans-serif;
             transition: all 0.2s ease;
             background: white;
+            resize: vertical;
         }
 
         .form-group input:focus,
-        .form-group select:focus {
+        .form-group select:focus,
+        .form-group textarea:focus {
             outline: none;
             border-color: #576238;
             box-shadow: 0 0 0 3px rgba(87, 98, 56, 0.1);
-        }
-
-        .input-with-icon {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .input-icon {
-            position: absolute;
-            left: 0.875rem;
-            color: #9E9D97;
-            font-size: 0.875rem;
-        }
-
-        .input-with-icon input {
-            padding-left: 1.75rem;
         }
 
         .form-hint {
@@ -282,40 +295,88 @@
             line-height: 1.4;
         }
 
-        .checkbox-group {
-            margin-bottom: 0;
-        }
-
-        .checkbox-label {
+        .toggle-row {
             display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            cursor: pointer;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid #F0EADC;
         }
 
-        .checkbox-label input {
-            width: 18px;
-            height: 18px;
-            margin-top: 0.125rem;
-            cursor: pointer;
+        .toggle-row:last-of-type {
+            border-bottom: none;
         }
 
-        .checkbox-text {
+        .toggle-info {
             flex: 1;
             display: flex;
             flex-direction: column;
             gap: 0.25rem;
         }
 
-        .checkbox-text strong {
+        .toggle-info strong {
             font-size: 0.85rem;
             color: #2C2B26;
+            font-weight: 600;
         }
 
-        .checkbox-text small {
+        .toggle-info small {
             font-size: 0.7rem;
             color: #9E9D97;
             font-weight: normal;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #E3DCD0;
+            transition: 0.3s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        }
+
+        .toggle-switch input:checked+.toggle-slider {
+            background-color: #576238;
+        }
+
+        .toggle-switch input:checked+.toggle-slider:before {
+            transform: translateX(20px);
+        }
+
+        .toggle-switch input:focus+.toggle-slider {
+            box-shadow: 0 0 0 3px rgba(87, 98, 56, 0.2);
         }
 
         .info-box {

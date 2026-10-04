@@ -8,6 +8,7 @@ use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class POSController extends Controller
 {
@@ -94,6 +95,9 @@ class POSController extends Controller
             $discount = $data['discount'] ?? 0;
             $finalTotal = $data['total'] ?? ($totalAmount - $discount);
 
+            // ✅ FIX: Gamitin ang Carbon::now('Asia/Manila') para siguradong PHT ang naka-save
+            $orderDate = Carbon::now('Asia/Manila');
+
             // Create order — status = PENDING by default
             $order = Order::create([
                 'customer_name' => $data['customer_name'],
@@ -104,8 +108,8 @@ class POSController extends Controller
                 'order_type' => $data['order_type'] ?? 'pick-up',
                 'delivery_address' => $data['delivery_address'] ?? null,
                 'landmark' => $data['landmark'] ?? null,
-                'status' => 'pending',        // ← DITO ANG FIX
-                'order_date' => now(),
+                'status' => 'pending',
+                'order_date' => $orderDate,
                 'processed_by' => Auth::id(),
             ]);
 

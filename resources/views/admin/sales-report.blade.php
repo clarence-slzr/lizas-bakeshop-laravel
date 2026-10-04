@@ -74,7 +74,7 @@
         $prev_to = date('Y-m-d', strtotime($from_date . ' -1 day'));
         $prev_from = date('Y-m-d', strtotime($prev_to . ' -' . ($days_diff - 1) . ' days'));
 
-        // DAILY SALES
+        // DAILY SALES (completed lang — para sa chart at revenue)
         $daily = Order::select(
             DB::raw('DATE(order_date) as date'),
             DB::raw('COUNT(*) as total_orders'),
@@ -100,30 +100,46 @@
             ->get()
             ->toArray();
 
-        // SUMMARY STATS
+        // ============================================
+        // SUMMARY STATS (FIXED)
+        // ============================================
+        // Revenue — completed lang
         $totalRevenue = array_sum(array_column($daily, 'total_sales'));
-        $totalOrders = array_sum(array_column($daily, 'total_orders'));
-        $avgDailySales = count($daily) > 0 ? $totalRevenue / count($daily) : 0;
-        $avgOrderValue = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
 
-        // PREVIOUS PERIOD STATS
-        $prevData = Order::where('status', 'completed')
+        // ✅ Completed orders count (para sa avg order value)
+        $completedCount = array_sum(array_column($daily, 'total_orders'));
+
+        // ✅ Total Orders — LAHAT NG STATUS (completed + pending + cancelled)
+        $totalOrders = Order::whereBetween(DB::raw('DATE(order_date)'), [$from_date, $to_date])->count();
+
+        // ✅ Average Daily Sales — base sa completed orders (revenue ÷ days na may sales)
+        $avgDailySales = count($daily) > 0 ? $totalRevenue / count($daily) : 0;
+
+        // ✅ Average Order Value — revenue ÷ completed orders (hindi kasama cancelled/pending)
+        $avgOrderValue = $completedCount > 0 ? $totalRevenue / $completedCount : 0;
+
+        // ============================================
+        // PREVIOUS PERIOD STATS (FIXED)
+        // ============================================
+        // Previous revenue — completed lang
+        $prevRevenue = (float) Order::where('status', 'completed')
             ->whereBetween(DB::raw('DATE(order_date)'), [$prev_from, $prev_to])
-            ->select(DB::raw('COALESCE(SUM(total_amount), 0) as revenue'), DB::raw('COUNT(*) as orders'))
-            ->first();
-        $prevRevenue = (float) ($prevData->revenue ?? 0);
-        $prevOrders = (int) ($prevData->orders ?? 0);
+            ->sum('total_amount');
+
+        // ✅ Previous orders — lahat ng status
+        $prevOrders = (int) Order::whereBetween(DB::raw('DATE(order_date)'), [$prev_from, $prev_to])
+            ->count();
 
         $revenueGrowth = $prevRevenue > 0 ? (($totalRevenue - $prevRevenue) / $prevRevenue) * 100 : 0;
         $ordersGrowth = $prevOrders > 0 ? (($totalOrders - $prevOrders) / $prevOrders) * 100 : 0;
 
-        // UNIQUE CUSTOMERS
+        // UNIQUE CUSTOMERS (completed lang)
         $uniqueCustomers = Order::where('status', 'completed')
             ->whereBetween(DB::raw('DATE(order_date)'), [$from_date, $to_date])
             ->distinct('customer_name')
             ->count('customer_name');
 
-        // ORDER STATUS BREAKDOWN
+        // ORDER STATUS BREAKDOWN (lahat ng status)
         $statusBreakdown = Order::whereBetween(DB::raw('DATE(order_date)'), [$from_date, $to_date])
             ->select('status', DB::raw('COUNT(*) as count'))
             ->groupBy('status')
@@ -132,6 +148,7 @@
 
         $pendingCount = $statusBreakdown['pending'] ?? 0;
         $cancelledCount = $statusBreakdown['cancelled'] ?? 0;
+        $refundedCount = $statusBreakdown['refunded'] ?? 0;
 
         // TOP CUSTOMERS
         $topCustomers = Order::where('status', 'completed')
@@ -285,7 +302,7 @@
             <div class="mini-stat">
                 <div class="mini-stat-icon success"><i class="fas fa-check-circle"></i></div>
                 <div>
-                    <span class="mini-stat-value">{{ number_format($totalOrders) }}</span>
+                    <span class="mini-stat-value">{{ number_format($completedCount) }}</span>
                     <span class="mini-stat-label">Completed</span>
                 </div>
             </div>
@@ -377,7 +394,7 @@
                         <tfoot>
                             <tr class="footer-row">
                                 <td class="col-date">Total</td>
-                                <td class="col-orders">{{ number_format($totalOrders) }}</td>
+                                <td class="col-orders">{{ number_format($completedCount) }}</td>
                                 <td class="col-sales">₱{{ number_format($totalRevenue, 2) }}</td>
                                 <td class="col-average">₱{{ number_format($avgOrderValue, 2) }}</td>
                             </tr>
