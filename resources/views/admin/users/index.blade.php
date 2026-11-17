@@ -49,13 +49,15 @@
 
         <!-- ========== PAGE HEADER ========== -->
         <div class="page-header">
-            <div>
+            <div class="page-header-left">
                 <h1>Manage Users</h1>
-                <p class="page-subtitle">Manage your bakeshop's user accounts and roles</p>
+                <p class="page-description">Manage your bakeshop's user accounts and roles</p>
             </div>
-            <a href="{{ route('admin.users.create') }}" class="btn-primary">
-                <i class="fa-solid fa-user-plus"></i> Add New User
-            </a>
+            <div class="header-actions">
+                <a href="{{ route('admin.users.create') }}" class="btn-primary">
+                    <i class="fa-solid fa-user-plus"></i> Add New User
+                </a>
+            </div>
         </div>
 
         <!-- ========== SUCCESS MESSAGE ========== -->
@@ -137,8 +139,9 @@
                         <input type="hidden" name="role" value="{{ $filterRole }}">
                     @endif
                     <div class="search-wrapper">
-                        <i class="fas fa-search"></i>
-                        <input type="text" name="search" placeholder="Search user..." value="{{ $search }}">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" name="search" id="searchInput" placeholder="Search user..."
+                            value="{{ $search }}">
                         @if($search !== '')
                             <a href="{{ buildURL(['search' => null]) }}" class="clear-btn">
                                 <i class="fas fa-times"></i>
@@ -150,21 +153,23 @@
 
             <!-- Filter Bar -->
             <div class="filter-bar">
-                <span class="filter-label">
-                    <i class="fas fa-filter"></i> Filter:
-                </span>
-                <a href="{{ buildURL(['role' => null, 'page' => 1]) }}"
-                    class="filter-chip {{ $filterRole === '' ? 'active' : '' }}">
-                    All Roles
-                </a>
-                <a href="{{ buildURL(['role' => 'admin', 'page' => 1]) }}"
-                    class="filter-chip {{ $filterRole === 'admin' ? 'active' : '' }}">
-                    <i class="fas fa-crown"></i> Administrator
-                </a>
-                <a href="{{ buildURL(['role' => 'cashier', 'page' => 1]) }}"
-                    class="filter-chip {{ $filterRole === 'cashier' ? 'active' : '' }}">
-                    <i class="fas fa-cash-register"></i> Cashier
-                </a>
+                <div class="filter-group">
+                    <span class="filter-label">
+                        <i class="fas fa-filter"></i> Filter:
+                    </span>
+                    <a href="{{ buildURL(['role' => null, 'page' => 1]) }}"
+                        class="filter-chip {{ $filterRole === '' ? 'active' : '' }}">
+                        All Roles
+                    </a>
+                    <a href="{{ buildURL(['role' => 'admin', 'page' => 1]) }}"
+                        class="filter-chip {{ $filterRole === 'admin' ? 'active' : '' }}">
+                        <i class="fas fa-crown"></i> Administrator
+                    </a>
+                    <a href="{{ buildURL(['role' => 'cashier', 'page' => 1]) }}"
+                        class="filter-chip {{ $filterRole === 'cashier' ? 'active' : '' }}">
+                        <i class="fas fa-cash-register"></i> Cashier
+                    </a>
+                </div>
             </div>
 
             <!-- Table -->
@@ -175,9 +180,9 @@
                             <th class="col-id">ID</th>
                             <th class="col-username">Username</th>
                             <th class="col-fullname">Full Name</th>
-                            <th class="col-role">Role</th>
-                            <th class="col-created">Created At</th>
-                            <th class="col-actions">Action</th>
+                            <th class="col-role text-center">Role</th>
+                            <th class="col-created text-center">Created At</th>
+                            <th class="col-actions text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -193,17 +198,17 @@
                                     <td class="col-fullname">
                                         <span class="fullname">{{ $u->full_name ?? $u->username }}</span>
                                     </td>
-                                    <td class="col-role">
+                                    <td class="col-role text-center">
                                         <span class="role-badge {{ $u->role == 'admin' ? 'role-admin' : 'role-cashier' }}">
                                             <i class="fas {{ $u->role == 'admin' ? 'fa-crown' : 'fa-cash-register' }}"></i>
                                             {{ $u->role == 'admin' ? 'Administrator' : 'Cashier' }}
                                         </span>
                                     </td>
-                                    <td class="col-created">
+                                    <td class="col-created text-center">
                                         <span class="created-date">{{ date('M d, Y', strtotime($u->created_at)) }}</span>
                                         <span class="created-time">{{ date('h:i A', strtotime($u->created_at)) }}</span>
                                     </td>
-                                    <td class="col-actions">
+                                    <td class="col-actions text-center">
                                         <a href="{{ route('admin.users.edit', $u->id) }}" class="action-btn action-edit">
                                             <i class="fas fa-edit"></i> Edit
                                         </a>
@@ -214,14 +219,13 @@
                             <tr class="empty-row">
                                 <td colspan="6">
                                     <div class="empty-state">
-                                        <i class="fas fa-users-slash"></i>
+                                        <div class="empty-icon"><i class="fas fa-users-slash"></i></div>
                                         @if($search || $filterRole)
                                             <p>No users match your search</p>
-                                            <a href="{{ route('admin.users.index') }}" class="link-clear">Clear filters</a>
+                                            <a href="{{ route('admin.users.index') }}" class="btn-clear">Clear filters</a>
                                         @else
                                             <p>No users found</p>
-                                            <a href="{{ route('admin.users.create') }}" class="btn-add-first">Add your first
-                                                user</a>
+                                            <a href="{{ route('admin.users.create') }}" class="btn-clear">Add your first user</a>
                                         @endif
                                     </div>
                                 </td>
@@ -233,10 +237,10 @@
 
             <!-- Pagination -->
             @if($totalPages > 1)
-                <div class="pagination">
-                    <span class="pagination-info">
+                <div class="pagination-wrapper">
+                    <div class="pagination-info">
                         Showing {{ $offset + 1 }}–{{ min($offset + $limit, $totalCount) }} of {{ $totalCount }}
-                    </span>
+                    </div>
                     <div class="pagination-links">
                         @if($page > 1)
                             <a href="{{ buildURL(['page' => $page - 1]) }}" class="page-link">
@@ -268,6 +272,18 @@
         </div>
     </div>
 
+    <script>
+        document.addEventListener('keydown', function (e) {
+            if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                document.getElementById('searchInput').focus();
+            }
+            if (e.key === 'Escape' && document.activeElement.id === 'searchInput') {
+                document.activeElement.blur();
+            }
+        });
+    </script>
+
     <style>
         .users-container {
             display: flex;
@@ -275,6 +291,7 @@
             gap: 1.5rem;
         }
 
+        /* ============ PAGE HEADER ============ */
         .page-header {
             display: flex;
             justify-content: space-between;
@@ -283,37 +300,50 @@
             flex-wrap: wrap;
         }
 
-        .page-header h1 {
+        .page-header-left h1 {
             font-family: 'Playfair Display', serif;
             font-size: 1.5rem;
+            /* ✅ Inayos para pantay sa iba */
             font-weight: 600;
             color: #2C2B26;
-            margin-bottom: 0.25rem;
+            margin: 0 0 0.25rem 0;
         }
 
-        .page-subtitle {
+        .page-description {
             font-size: 0.8rem;
+            /* ✅ Inayos para pantay sa iba */
             color: #9E9D97;
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
         }
 
         .btn-primary {
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            background: #576238;
+            background: linear-gradient(135deg, #7A8B4F, #576238);
             color: white;
             padding: 0.625rem 1.25rem;
             border-radius: 0.5rem;
             text-decoration: none;
             font-size: 0.85rem;
             font-weight: 500;
-            transition: background 0.2s ease;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
         }
 
         .btn-primary:hover {
-            background: #3E4A28;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(87, 98, 56, 0.3);
         }
 
+        /* ============ ALERTS ============ */
         .alert {
             display: flex;
             align-items: center;
@@ -335,13 +365,20 @@
             color: #C5705A;
         }
 
+        /* ============ STATS CARDS ============ */
         .stats-row {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 1rem;
         }
 
-        @media (max-width: 640px) {
+        @media (max-width: 900px) {
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 500px) {
             .stats-row {
                 grid-template-columns: 1fr;
             }
@@ -351,21 +388,46 @@
             background: white;
             border: 1px solid #E3DCD0;
             border-radius: 0.75rem;
-            padding: 1rem 1.25rem;
+            padding: 1.25rem;
             display: flex;
             align-items: center;
             gap: 1rem;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #576238;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: #576238;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
         }
 
         .stat-icon {
-            width: 48px;
-            height: 48px;
+            width: 52px;
+            height: 52px;
             background: #F0EADC;
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.15rem;
+            font-size: 1.25rem;
             color: #576238;
             flex-shrink: 0;
         }
@@ -387,19 +449,21 @@
         }
 
         .stat-value {
-            font-size: 1.35rem;
+            font-size: 1.5rem;
             font-weight: 700;
             color: #2C2B26;
             line-height: 1.2;
         }
 
         .stat-label {
-            font-size: 0.65rem;
+            font-size: 0.7rem;
             color: #9E9D97;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            font-weight: 500;
         }
 
+        /* ============ DATA CARD ============ */
         .data-card {
             background: white;
             border: 1px solid #E3DCD0;
@@ -409,7 +473,7 @@
 
         .card-header {
             background: #FDF8F0;
-            padding: 1rem 1.25rem;
+            padding: 1.25rem;
             border-bottom: 1px solid #E3DCD0;
             display: flex;
             justify-content: space-between;
@@ -425,7 +489,7 @@
         }
 
         .header-left h3 {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             font-weight: 600;
             color: #2C2B26;
             margin: 0;
@@ -440,6 +504,7 @@
             font-weight: 500;
         }
 
+        /* ============ SEARCH ============ */
         .search-form {
             margin: 0;
         }
@@ -450,7 +515,7 @@
             align-items: center;
         }
 
-        .search-wrapper i.fa-search {
+        .search-icon {
             position: absolute;
             left: 0.75rem;
             color: #9E9D97;
@@ -458,18 +523,25 @@
         }
 
         .search-wrapper input {
-            padding: 0.5rem 2rem 0.5rem 2.2rem;
+            padding: 0.55rem 2rem 0.55rem 2.25rem;
             border: 1px solid #E3DCD0;
             border-radius: 0.5rem;
             font-size: 0.8rem;
-            width: 240px;
+            width: 260px;
             font-family: 'Inter', sans-serif;
-            transition: border-color 0.2s ease;
+            transition: all 0.2s ease;
+            background: white;
+            color: #2C2B26;
         }
 
         .search-wrapper input:focus {
             outline: none;
             border-color: #576238;
+            box-shadow: 0 0 0 3px rgba(87, 98, 56, 0.1);
+        }
+
+        .search-wrapper input::placeholder {
+            color: #C4C3BC;
         }
 
         .clear-btn {
@@ -484,13 +556,17 @@
             color: #C5705A;
         }
 
+        /* ============ FILTER BAR ============ */
         .filter-bar {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
             padding: 0.75rem 1.25rem;
             background: #FDF8F0;
             border-bottom: 1px solid #E3DCD0;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
             flex-wrap: wrap;
         }
 
@@ -505,9 +581,9 @@
             display: inline-flex;
             align-items: center;
             gap: 0.375rem;
-            padding: 0.35rem 0.85rem;
+            padding: 0.45rem 0.9rem;
             border-radius: 2rem;
-            font-size: 0.72rem;
+            font-size: 0.75rem;
             font-weight: 500;
             color: #6B6A65;
             background: white;
@@ -531,6 +607,7 @@
             font-size: 0.65rem;
         }
 
+        /* ============ TABLE ============ */
         .table-wrapper {
             overflow-x: auto;
         }
@@ -541,6 +618,7 @@
             font-family: 'Inter', sans-serif;
             font-size: 0.8125rem;
             line-height: 1.5;
+            table-layout: fixed;
         }
 
         .data-table thead tr {
@@ -549,17 +627,24 @@
         }
 
         .data-table th {
-            padding: 0.875rem 1rem;
+            padding: 0.875rem 1.25rem;
             text-align: left;
             font-weight: 600;
             color: #576238;
             font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        /* ✅ Center alignment utility */
+        .data-table th.text-center,
+        .data-table td.text-center {
+            text-align: center !important;
         }
 
         .data-table td {
-            padding: 0.875rem 1rem;
+            padding: 1rem 1.25rem;
             text-align: left;
             color: #2C2B26;
             border-bottom: 1px solid #F0EADC;
@@ -567,93 +652,110 @@
         }
 
         .data-table tbody tr:hover {
-            background: #FDF8F0;
+            background: #FDFBF7;
         }
 
         .data-table tbody tr:last-child td {
             border-bottom: none;
         }
 
+        /* ✅ Responsive Column Widths */
         .col-id {
-            width: 70px;
+            width: 10%;
         }
 
         .col-username {
-            width: 150px;
+            width: 20%;
         }
 
         .col-fullname {
-            width: auto;
+            width: 25%;
         }
 
         .col-role {
-            width: 150px;
+            width: 15%;
         }
 
         .col-created {
-            width: 140px;
+            width: 15%;
         }
 
         .col-actions {
-            width: 100px;
+            width: 15%;
         }
 
         .user-id {
             font-weight: 600;
             color: #576238;
-            font-family: monospace;
+            font-family: 'SF Mono', 'Monaco', monospace;
             font-size: 0.8rem;
+            background: #F0EADC;
+            padding: 0.25rem 0.6rem;
+            border-radius: 0.375rem;
+            display: inline-block;
         }
 
         .username {
-            font-weight: 500;
+            font-weight: 600;
             color: #2C2B26;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 0.8rem;
         }
 
         .fullname {
+            font-weight: 500;
             color: #2C2B26;
         }
 
         .created-date {
             display: block;
-            font-size: 0.75rem;
+            font-size: 0.78rem;
             color: #2C2B26;
+            font-weight: 500;
         }
 
         .created-time {
             display: block;
-            font-size: 0.65rem;
+            font-size: 0.68rem;
             color: #9E9D97;
+            margin-top: 0.1rem;
         }
 
         .role-badge {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 0.375rem;
             padding: 0.3rem 0.75rem;
             border-radius: 2rem;
             font-size: 0.7rem;
-            font-weight: 500;
+            font-weight: 600;
+            white-space: nowrap;
+            min-width: 120px;
+            /* ✅ Para pantay-pantay haba */
         }
 
         .role-admin {
             background: #FEF5E8;
             color: #D4A054;
+            border: 1px solid #F8E5C5;
         }
 
         .role-cashier {
             background: #E8F0E3;
             color: #576238;
+            border: 1px solid #C5D4A8;
         }
 
         .action-btn {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 0.35rem;
-            padding: 0.35rem 0.7rem;
+            padding: 0.4rem 0.8rem;
             border-radius: 0.375rem;
-            font-size: 0.72rem;
-            font-weight: 500;
+            font-size: 0.75rem;
+            font-weight: 600;
             text-decoration: none;
             transition: all 0.2s ease;
         }
@@ -661,68 +763,83 @@
         .action-edit {
             background: #F0EADC;
             color: #576238;
+            border: 1px solid #E3DCD0;
         }
 
         .action-edit:hover {
             background: #576238;
             color: white;
+            border-color: #576238;
+            transform: translateY(-1px);
         }
 
+        /* ============ EMPTY STATE ============ */
         .empty-row td {
             padding: 0 !important;
         }
 
         .empty-state {
             text-align: center;
-            padding: 3rem 2rem;
+            padding: 3.5rem 2rem;
         }
 
-        .empty-state i {
-            font-size: 2.5rem;
-            color: #D4C9BD;
-            margin-bottom: 1rem;
-            display: block;
+        .empty-icon {
+            width: 80px;
+            height: 80px;
+            background: #F0EADC;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.25rem;
+        }
+
+        .empty-icon i {
+            font-size: 2rem;
+            color: #C4C3BC;
         }
 
         .empty-state p {
-            color: #9E9D97;
-            margin-bottom: 0.75rem;
+            color: #6B6A65;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.9rem;
         }
 
-        .link-clear {
-            color: #576238;
-            text-decoration: underline;
-            font-size: 0.8rem;
-        }
-
-        .btn-add-first {
-            display: inline-block;
+        .btn-clear {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
             background: #576238;
             color: white;
             padding: 0.5rem 1rem;
             border-radius: 0.5rem;
             text-decoration: none;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
         }
 
-        .btn-add-first:hover {
+        .btn-clear:hover {
             background: #3E4A28;
+            transform: translateY(-1px);
         }
 
-        .pagination {
+        /* ============ PAGINATION ============ */
+        .pagination-wrapper {
+            padding: 1rem 1.25rem;
+            border-top: 1px solid #E3DCD0;
+            background: #FDF8F0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 1rem;
-            padding: 1rem 1.25rem;
-            background: #FDF8F0;
-            border-top: 1px solid #E3DCD0;
             flex-wrap: wrap;
+            gap: 1rem;
         }
 
         .pagination-info {
             font-size: 0.75rem;
-            color: #9E9D97;
+            color: #7A7A75;
         }
 
         .pagination-links {
@@ -734,12 +851,13 @@
         .page-link {
             background: white;
             color: #576238;
-            padding: 0.35rem 0.7rem;
+            padding: 0.4rem 0.75rem;
             border-radius: 0.375rem;
             text-decoration: none;
             font-size: 0.75rem;
             border: 1px solid #E3DCD0;
             transition: all 0.2s ease;
+            font-weight: 500;
         }
 
         .page-link:hover {
@@ -751,10 +869,29 @@
         .page-current {
             background: #576238;
             color: white;
-            padding: 0.35rem 0.7rem;
+            padding: 0.4rem 0.75rem;
             border-radius: 0.375rem;
             font-size: 0.75rem;
             font-weight: 600;
+        }
+
+        /* ✅ Responsive */
+        @media (max-width: 768px) {
+            .search-wrapper input {
+                width: 200px;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 0.75rem 0.5rem;
+                font-size: 0.75rem;
+            }
+
+            .role-badge {
+                min-width: 100px;
+                font-size: 0.65rem;
+                padding: 0.25rem 0.5rem;
+            }
         }
     </style>
 @endsection

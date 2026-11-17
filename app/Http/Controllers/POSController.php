@@ -14,6 +14,7 @@ class POSController extends Controller
 {
     public function index()
     {
+        // This will now only pull available products with actual stock
         $products = Product::where('is_available', 1)
             ->where('stock', '>', 0)
             ->orderBy('category')
@@ -25,55 +26,14 @@ class POSController extends Controller
         return view('cashier.pos', compact('products', 'cart'));
     }
 
-    public function addToCart(Request $request)
-    {
-        $productId = $request->product_id;
-        $product = Product::findOrFail($productId);
-
-        $cart = session()->get('cart', []);
-
-        if (isset($cart[$productId])) {
-            $cart[$productId]['quantity']++;
-        } else {
-            $cart[$productId] = [
-                'id' => $product->id,
-                'name' => $product->name,
-                'price' => $product->price,
-                'quantity' => 1,
-                'stock' => $product->stock,
-            ];
-        }
-
-        session()->put('cart', $cart);
-        return redirect()->route('cashier.pos')->with('success', 'Added to cart!');
-    }
-
-    public function removeFromCart(Request $request)
-    {
-        $cart = session()->get('cart', []);
-
-        if (isset($cart[$request->product_id])) {
-            unset($cart[$request->product_id]);
-        }
-
-        session()->put('cart', $cart);
-        return redirect()->route('cashier.pos')->with('success', 'Removed from cart!');
-    }
-
-    public function clearCart()
-    {
-        session()->forget('cart');
-        return redirect()->route('cashier.pos')->with('success', 'Cart cleared!');
-    }
+    // ... (Keep your addToCart, removeFromCart, clearCart methods as they are) ...
 
     /**
      * Place Order — returns JSON for AJAX/fetch
      */
     public function placeOrder(Request $request)
     {
-        // Get JSON or form data
         $data = $request->isJson() ? $request->json()->all() : $request->all();
-
         $cart = $data['items'] ?? [];
 
         if (empty($cart)) {
@@ -83,7 +43,6 @@ class POSController extends Controller
         DB::beginTransaction();
 
         try {
-            // Compute total from items
             $totalAmount = 0;
             foreach ($cart as $item) {
                 $qty = $item['qty'] ?? $item['quantity'] ?? 0;
@@ -91,14 +50,11 @@ class POSController extends Controller
                 $totalAmount += $price * $qty;
             }
 
-            // Apply discount if provided
             $discount = $data['discount'] ?? 0;
             $finalTotal = $data['total'] ?? ($totalAmount - $discount);
-
-            // ✅ FIX: Gamitin ang Carbon::now('Asia/Manila') para siguradong PHT ang naka-save
             $orderDate = Carbon::now('Asia/Manila');
 
-            // Create order — status = PENDING by default
+            // Create Order
             $order = Order::create([
                 'customer_name' => $data['customer_name'],
                 'contact_number' => $data['contact_number'] ?? null,
@@ -113,7 +69,7 @@ class POSController extends Controller
                 'processed_by' => Auth::id(),
             ]);
 
-            // Create order items
+            // Create Order Items & Update Stock
             foreach ($cart as $item) {
                 $qty = $item['qty'] ?? $item['quantity'] ?? 0;
                 $price = $item['price'] ?? 0;
@@ -126,8 +82,22 @@ class POSController extends Controller
                     'subtotal' => $price * $qty,
                 ]);
 
-                // Decrement stock
-                Product::where('id', $item['id'])->decrement('stock', $qty);
+                // ✅ FIXED STOCK LOGIC HERE
+                $product = Product::find($item['id']);
+                if ($product) {
+                    $newStock = $product->stock - $qty;
+
+                    // Prevent negative stock just in case
+                    if ($newStock < 0) {
+                        throw new \Exception("Insufficient stock for " . $product->name);
+                    }
+
+                    // Update stock AND set to unavailable if 0
+                    $product->update([
+                        'stock' => $newStock,
+                        'is_available' => $newStock > 0 ? 1 : 0
+                    ]);
+                }
             }
 
             DB::commit();

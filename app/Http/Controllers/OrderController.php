@@ -7,6 +7,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class OrderController extends Controller
 {
@@ -14,7 +15,9 @@ class OrderController extends Controller
     {
         $query = Order::with('processedBy');
 
-        // Search
+        // ============================================
+        // SEARCH FILTER
+        // ============================================
         if ($request->filled('search')) {
             $search = trim($request->search);
             $query->where(function ($q) use ($search) {
@@ -24,7 +27,9 @@ class OrderController extends Controller
             });
         }
 
-        // Filter by status
+        // ============================================
+        // STATUS FILTER
+        // ============================================
         if ($request->filled('status')) {
             $allowedStatus = ['pending', 'completed', 'cancelled', 'refunded'];
             if (in_array($request->status, $allowedStatus)) {
@@ -32,11 +37,16 @@ class OrderController extends Controller
             }
         }
 
-        // Filter by date
+        // ============================================
+        // DATE FILTER (Standard Tabs)
+        // ============================================
         if ($request->filled('date')) {
             switch ($request->date) {
                 case 'today':
                     $query->whereDate('order_date', today());
+                    break;
+                case 'yesterday':
+                    $query->whereDate('order_date', today()->subDay());
                     break;
                 case 'week':
                     $query->where('order_date', '>=', now()->subDays(7));
@@ -45,11 +55,34 @@ class OrderController extends Controller
                     $query->whereMonth('order_date', now()->month)
                         ->whereYear('order_date', now()->year);
                     break;
+                case 'last_month':
+                    $query->whereMonth('order_date', now()->subMonth()->month)
+                        ->whereYear('order_date', now()->subMonth()->year);
+                    break;
+                case 'year':
+                    $query->whereYear('order_date', now()->year);
+                    break;
             }
         }
 
+        // ============================================
+        // CUSTOM DATE RANGE FILTER
+        // ============================================
+        if ($request->filled('start_date')) {
+            $query->whereDate('order_date', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->whereDate('order_date', '<=', $request->end_date);
+        }
+
+        // ============================================
+        // PAGINATION & ORDERING
+        // ============================================
         $orders = $query->orderBy('order_date', 'desc')->paginate(10);
 
+        // ============================================
+        // STATS (Overall, hindi affected ng filters)
+        // ============================================
         $stats = [
             'total' => Order::count(),
             'pending' => Order::where('status', 'pending')->count(),

@@ -66,6 +66,39 @@ class ShiftController extends Controller
         ));
     }
 
+    // ✅ IDINAGDAG NA METHOD PARA SA LIVE STATS SCRIPT
+    public function liveStats()
+    {
+        $currentUserId = Auth::id();
+        $activeShift = CashierShift::where('user_id', $currentUserId)
+            ->where('status', 'active')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        if (!$activeShift) {
+            return response()->json(['active' => false]);
+        }
+
+        $liveTotal = Order::where('processed_by', $currentUserId)
+            ->where('status', 'completed')
+            ->whereBetween('order_date', [$activeShift->shift_start, now()])
+            ->sum('total_amount') ?? 0;
+
+        $liveOrders = Order::where('processed_by', $currentUserId)
+            ->where('status', 'completed')
+            ->whereBetween('order_date', [$activeShift->shift_start, now()])
+            ->count();
+
+        $expectedCash = $activeShift->starting_cash + $liveTotal;
+
+        return response()->json([
+            'active' => true,
+            'liveTotal' => number_format($liveTotal, 2),
+            'liveOrders' => $liveOrders,
+            'expectedCash' => number_format($expectedCash, 2)
+        ]);
+    }
+
     public function start(Request $request)
     {
         $validated = $request->validate([
@@ -74,7 +107,6 @@ class ShiftController extends Controller
 
         $currentUserId = Auth::id();
 
-        // Double-check walang active shift
         $existing = CashierShift::where('user_id', $currentUserId)
             ->where('status', 'active')
             ->first();
@@ -113,7 +145,6 @@ class ShiftController extends Controller
             return redirect()->route('cashier.shift')->with('error', 'no_active');
         }
 
-        // Get sales ONLY for this shift's timeframe
         $total_sales = Order::where('processed_by', $currentUserId)
             ->where('status', 'completed')
             ->whereBetween('order_date', [$activeShift->shift_start, now()])

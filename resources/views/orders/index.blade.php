@@ -19,29 +19,14 @@
         {{-- ============ FLASH MESSAGES ============ --}}
         @if(session('success'))
             <div class="alert alert-success" id="flashAlert">
-                <i class="fas fa-check-circle"></i>
-                <span>{{ session('success') }}</span>
-                <button type="button" class="alert-close" onclick="document.getElementById('flashAlert').remove()">
-                    <i class="fas fa-times"></i>
-                </button>
+                <i class="fas fa-check-circle"></i> {{ session('success') }}
+                <button type="button" class="alert-close" data-dismiss="flashAlert"><i class="fas fa-times"></i></button>
             </div>
         @endif
         @if(session('error'))
             <div class="alert alert-error" id="flashError">
-                <i class="fas fa-exclamation-circle"></i>
-                <span>{{ session('error') }}</span>
-                <button type="button" class="alert-close" onclick="document.getElementById('flashError').remove()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        @endif
-        @if(session('info'))
-            <div class="alert alert-info" id="flashInfo">
-                <i class="fas fa-info-circle"></i>
-                <span>{{ session('info') }}</span>
-                <button type="button" class="alert-close" onclick="document.getElementById('flashInfo').remove()">
-                    <i class="fas fa-times"></i>
-                </button>
+                <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+                <button type="button" class="alert-close" data-dismiss="flashError"><i class="fas fa-times"></i></button>
             </div>
         @endif
 
@@ -93,65 +78,76 @@
                 </div>
             </div>
 
-            {{-- Filters Bar --}}
-            <div class="filters-bar">
-                <form method="GET" action="{{ route('orders.index') }}" class="search-form">
-                    @if(request('status'))<input type="hidden" name="status" value="{{ request('status') }}">@endif
-                    @if(request('date'))<input type="hidden" name="date" value="{{ request('date') }}">@endif
-                    <div class="search-wrapper">
-                        <i class="fas fa-search search-icon"></i>
-                        <input type="text" name="search" placeholder="Search by order no., customer, or phone..."
-                            value="{{ request('search') }}">
-                        @if(request('search'))
-                            <a href="{{ route('orders.index', array_merge(request()->except('search'))) }}" class="clear-search"
-                                title="Clear">
-                                <i class="fas fa-times"></i>
-                            </a>
-                        @endif
-                        <button type="submit" class="search-btn">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
-                </form>
+            {{-- Status Filter Tabs --}}
+            <div class="filter-tabs">
+                <a href="{{ route('orders.index', array_merge(request()->except('status', 'page'))) }}"
+                    class="filter-tab {{ !request('status') ? 'active' : '' }}">
+                    <i class="fas fa-list"></i> All
+                    <span class="count">{{ $stats['total'] }}</span>
+                </a>
+                <a href="{{ route('orders.index', array_merge(request()->except('page'), ['status' => 'completed'])) }}"
+                    class="filter-tab {{ request('status') === 'completed' ? 'active' : '' }}">
+                    <i class="fas fa-check-circle"></i> Completed
+                    <span class="count">{{ $stats['completed'] }}</span>
+                </a>
+                <a href="{{ route('orders.index', array_merge(request()->except('page'), ['status' => 'pending'])) }}"
+                    class="filter-tab {{ request('status') === 'pending' ? 'active' : '' }}">
+                    <i class="fas fa-clock"></i> Pending
+                    <span class="count">{{ $stats['pending'] }}</span>
+                </a>
+                <a href="{{ route('orders.index', array_merge(request()->except('page'), ['status' => 'cancelled'])) }}"
+                    class="filter-tab {{ request('status') === 'cancelled' ? 'active' : '' }}">
+                    <i class="fas fa-times-circle"></i> Cancelled
+                    <span class="count">{{ $stats['cancelled'] }}</span>
+                </a>
+                <a href="{{ route('orders.index', array_merge(request()->except('page'), ['status' => 'refunded'])) }}"
+                    class="filter-tab {{ request('status') === 'refunded' ? 'active' : '' }}">
+                    <i class="fas fa-rotate-left"></i> Refunded
+                    <span class="count">{{ $stats['refunded'] }}</span>
+                </a>
+            </div>
 
-                <div class="filter-buttons">
-                    <a href="{{ route('orders.index', array_merge(request()->except('status', 'page'))) }}"
-                        class="filter-btn {{ !request('status') ? 'active' : '' }}">
-                        All
-                    </a>
-                    <a href="{{ route('orders.index', array_merge(request()->except('page'), ['status' => 'pending'])) }}"
-                        class="filter-btn {{ request('status') === 'pending' ? 'active' : '' }}">
-                        Pending
-                    </a>
-                    <a href="{{ route('orders.index', array_merge(request()->except('page'), ['status' => 'completed'])) }}"
-                        class="filter-btn {{ request('status') === 'completed' ? 'active' : '' }}">
-                        Completed
-                    </a>
-                    <a href="{{ route('orders.index', array_merge(request()->except('page'), ['status' => 'cancelled'])) }}"
-                        class="filter-btn {{ request('status') === 'cancelled' ? 'active' : '' }}">
-                        Cancelled
-                    </a>
-                    <a href="{{ route('orders.index', array_merge(request()->except('page'), ['status' => 'refunded'])) }}"
-                        class="filter-btn {{ request('status') === 'refunded' ? 'active' : '' }}">
-                        Refunded
-                    </a>
-                </div>
+            {{-- Advanced Filter Bar (Date & Sort) --}}
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <label><i class="fas fa-filter"></i> Filters:</label>
 
-                <div class="date-filter">
-                    <select name="date" onchange="location.href=this.value" class="filter-select">
+                    {{-- Date Filter --}}
+                    <select class="filter-select" onchange="location.href=this.value">
                         <option
-                            value="{{ route('orders.index', array_merge(request()->except('date', 'page'), ['date' => null])) }}"
-                            {{ !request('date') ? 'selected' : '' }}>All Time</option>
+                            value="{{ route('orders.index', array_merge(request()->except('date', 'start_date', 'end_date', 'page'))) }}"
+                            {{ !request('date') && !request('start_date') ? 'selected' : '' }}>All Dates</option>
                         <option
                             value="{{ route('orders.index', array_merge(request()->except('page'), ['date' => 'today'])) }}"
                             {{ request('date') === 'today' ? 'selected' : '' }}>Today</option>
                         <option
+                            value="{{ route('orders.index', array_merge(request()->except('page'), ['date' => 'yesterday'])) }}"
+                            {{ request('date') === 'yesterday' ? 'selected' : '' }}>Yesterday</option>
+                        <option
                             value="{{ route('orders.index', array_merge(request()->except('page'), ['date' => 'week'])) }}"
-                            {{ request('date') === 'week' ? 'selected' : '' }}>This Week</option>
+                            {{ request('date') === 'week' ? 'selected' : '' }}>Last 7 Days</option>
                         <option
                             value="{{ route('orders.index', array_merge(request()->except('page'), ['date' => 'month'])) }}"
                             {{ request('date') === 'month' ? 'selected' : '' }}>This Month</option>
+                        <option
+                            value="{{ route('orders.index', array_merge(request()->except('page'), ['date' => 'last_month'])) }}"
+                            {{ request('date') === 'last_month' ? 'selected' : '' }}>Last Month</option>
+                        <option
+                            value="{{ route('orders.index', array_merge(request()->except('page'), ['date' => 'year'])) }}"
+                            {{ request('date') === 'year' ? 'selected' : '' }}>This Year</option>
                     </select>
+
+                    {{-- Sort (Placeholder) --}}
+                    <select class="filter-select">
+                        <option>Newest First</option>
+                    </select>
+
+                    {{-- Clear Filters Button --}}
+                    @if(request('status') || request('date') || request('search') || request('start_date'))
+                        <a href="{{ route('orders.index') }}" class="btn-clear-filters">
+                            <i class="fas fa-times"></i> Clear All
+                        </a>
+                    @endif
                 </div>
             </div>
 
@@ -162,11 +158,10 @@
                         <tr>
                             <th class="col-order">Order No.</th>
                             <th class="col-customer">Customer</th>
-                            <th class="col-amount">Total Amount</th>
-                            <th class="col-type">Order Type</th>
-                            <th class="col-status">Status</th>
-                            <th class="col-date">Date</th>
-                            <th class="col-actions">Actions</th>
+                            <th class="col-amount text-center">Total Amount</th>
+                            <th class="col-type text-center">Type</th>
+                            <th class="col-status text-center">Status</th>
+                            <th class="col-date text-center">Date</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -181,18 +176,18 @@
                                     default => 'status-pending',
                                 };
                                 $statusIcon = match ($status) {
-                                    'pending' => 'fa-hourglass-half',
+                                    'pending' => 'fa-clock',
                                     'completed' => 'fa-check-circle',
                                     'cancelled' => 'fa-times-circle',
                                     'refunded' => 'fa-rotate-left',
-                                    default => 'fa-hourglass-half',
+                                    default => 'fa-clock',
                                 };
                             @endphp
-                            <tr>
+                            <tr class="clickable-row" data-href="{{ route('orders.show', $order->id) }}">
                                 <td class="col-order">
-                                    <a href="{{ route('orders.show', $order->id) }}" class="order-link">
+                                    <span class="order-link">
                                         #{{ str_pad($order->id, 5, '0', STR_PAD_LEFT) }}
-                                    </a>
+                                    </span>
                                 </td>
                                 <td class="col-customer">
                                     <div class="customer-cell">
@@ -205,10 +200,10 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td class="col-amount">
+                                <td class="col-amount text-center">
                                     <span class="amount">₱{{ number_format($order->total_amount, 2) }}</span>
                                 </td>
-                                <td class="col-type">
+                                <td class="col-type text-center">
                                     @if(($order->order_type ?? 'pickup') === 'delivery')
                                         <span class="type-badge type-delivery">
                                             <i class="fas fa-truck"></i> Delivery
@@ -219,63 +214,24 @@
                                         </span>
                                     @endif
                                 </td>
-                                <td class="col-status">
+                                <td class="col-status text-center">
                                     <span class="status-badge {{ $statusClass }}">
-                                        <i class="fas {{ $statusIcon }}"></i>
-                                        {{ ucfirst($status) }}
+                                        <i class="fas {{ $statusIcon }}"></i> {{ ucfirst($status) }}
                                     </span>
                                 </td>
-                                <td class="col-date">
-                                    <div class="date-cell">
-                                        <span
-                                            class="date">{{ $order->order_date ? $order->order_date->format('M d, Y') : 'N/A' }}</span>
-                                        <span
-                                            class="time">{{ $order->order_date ? $order->order_date->format('h:i A') : '' }}</span>
-                                    </div>
-                                </td>
-                                <td class="col-actions">
-                                    <div class="action-buttons">
-                                        <a href="{{ route('orders.show', $order->id) }}" class="action-btn action-view"
-                                            title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-
-                                        @if($status === 'pending')
-                                            <button type="button" class="action-btn action-cancel"
-                                                onclick="openCancelModal({{ $order->id }}, '{{ addslashes($order->customer_name) }}', '{{ number_format($order->total_amount, 2) }}')"
-                                                title="Cancel Order">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        @endif
-                                    </div>
+                                <td class="col-date text-center">
+                                    <span class="date-primary">{{ $order->order_date->format('M d, Y') }}</span>
+                                    <span class="date-time">{{ $order->order_date->format('h:i A') }}</span>
                                 </td>
                             </tr>
                         @empty
-                            <tr>
-                                <td colspan="7">
+                            <tr class="empty-row">
+                                <td colspan="6">
                                     <div class="empty-state">
-                                        <div class="empty-icon">
-                                            <i class="fas fa-receipt"></i>
-                                        </div>
-                                        <p>
-                                            @if(request('status') === 'cancelled')
-                                                No cancelled orders
-                                            @elseif(request('status') === 'pending')
-                                                No pending orders
-                                            @elseif(request('status') === 'completed')
-                                                No completed orders
-                                            @elseif(request('status') === 'refunded')
-                                                No refunded orders
-                                            @elseif(request('search'))
-                                                No results for "{{ request('search') }}"
-                                            @else
-                                                No orders yet
-                                            @endif
-                                        </p>
-                                        @if(request()->hasAny(['status', 'search', 'date']))
-                                            <a href="{{ route('orders.index') }}" class="btn-clear-filter">
-                                                <i class="fas fa-times"></i> Clear Filters
-                                            </a>
+                                        <div class="empty-icon"><i class="fas fa-receipt"></i></div>
+                                        <p>No orders found</p>
+                                        @if(request()->hasAny(['status', 'search', 'date', 'start_date']))
+                                            <a href="{{ route('orders.index') }}" class="link-clear">Clear filters</a>
                                         @endif
                                     </div>
                                 </td>
@@ -285,167 +241,96 @@
                 </table>
             </div>
 
-            {{-- ============ PROFESSIONAL PAGINATION ============ --}}
+            {{-- ============ CUSTOM PAGINATION ============ --}}
             @if($orders->hasPages())
-                <div class="pagination-wrapper">
+                <div class="pagination">
                     <div class="pagination-info">
-                        <i class="fas fa-list-ul"></i>
-                        Showing <strong>{{ $orders->firstItem() }}-{{ $orders->lastItem() }}</strong> of
-                        <strong>{{ $orders->total() }}</strong> orders
+                        Showing <strong>{{ $orders->firstItem() }}</strong> to <strong>{{ $orders->lastItem() }}</strong> of
+                        <strong>{{ $orders->total() }}</strong> results
                     </div>
+                    <div class="pagination-links">
+                        {{-- Previous Button --}}
+                        @if ($orders->onFirstPage())
+                            <span class="page-btn disabled"><i class="fas fa-chevron-left"></i></span>
+                        @else
+                            <a href="{{ $orders->previousPageUrl() }}" class="page-btn"><i class="fas fa-chevron-left"></i></a>
+                        @endif
 
-                    <nav class="custom-pagination" role="navigation" aria-label="Pagination Navigation">
-                        <ul class="pagination-list">
-                            {{-- Previous --}}
-                            @if ($orders->onFirstPage())
-                                <li class="pagination-item disabled">
-                                    <span class="pagination-link">
-                                        <i class="fas fa-chevron-left"></i>
-                                    </span>
-                                </li>
+                        {{-- Page Numbers --}}
+                        @foreach ($orders->getUrlRange(max(1, $orders->currentPage() - 2), min($orders->lastPage(), $orders->currentPage() + 2)) as $page => $url)
+                            @if ($page == $orders->currentPage())
+                                <span class="page-btn active">{{ $page }}</span>
                             @else
-                                <li class="pagination-item">
-                                    <a href="{{ $orders->previousPageUrl() }}" class="pagination-link" rel="prev">
-                                        <i class="fas fa-chevron-left"></i>
-                                    </a>
-                                </li>
+                                <a href="{{ $url }}" class="page-btn">{{ $page }}</a>
                             @endif
+                        @endforeach
 
-                            {{-- Page Numbers --}}
-                            @foreach ($orders->getUrlRange(max(1, $orders->currentPage() - 2), min($orders->lastPage(), $orders->currentPage() + 2)) as $page => $url)
-                                @if ($page == $orders->currentPage())
-                                    <li class="pagination-item active">
-                                        <span class="pagination-link">{{ $page }}</span>
-                                    </li>
-                                @else
-                                    <li class="pagination-item">
-                                        <a href="{{ $url }}" class="pagination-link">{{ $page }}</a>
-                                    </li>
-                                @endif
-                            @endforeach
-
-                            {{-- Next --}}
-                            @if ($orders->hasMorePages())
-                                <li class="pagination-item">
-                                    <a href="{{ $orders->nextPageUrl() }}" class="pagination-link" rel="next">
-                                        <i class="fas fa-chevron-right"></i>
-                                    </a>
-                                </li>
-                            @else
-                                <li class="pagination-item disabled">
-                                    <span class="pagination-link">
-                                        <i class="fas fa-chevron-right"></i>
-                                    </span>
-                                </li>
-                            @endif
-                        </ul>
-                    </nav>
+                        {{-- Next Button --}}
+                        @if ($orders->hasMorePages())
+                            <a href="{{ $orders->nextPageUrl() }}" class="page-btn"><i class="fas fa-chevron-right"></i></a>
+                        @else
+                            <span class="page-btn disabled"><i class="fas fa-chevron-right"></i></span>
+                        @endif
+                    </div>
                 </div>
             @endif
-
-            {{-- ============================================ --}}
-            {{-- DYNAMIC FOOTER — Base sa Filter --}}
-            {{-- ============================================ --}}
-            @php
-                $currentStatus = request('status');
-                $currentDate = request('date');
-                $hasFilter = $currentStatus || $currentDate || request('search');
-            @endphp
-
-            <div class="card-footer">
-                @if(!$hasFilter)
-                    <div class="footer-stat">
-                        <span class="footer-label">
-                            <i class="fas fa-peso-sign"></i> Total Revenue:
-                        </span>
-                        <span class="footer-value">₱{{ number_format($stats['revenue'] ?? 0, 2) }}</span>
-                    </div>
-                    <div class="footer-stat">
-                        <span class="footer-label">
-                            <i class="fas fa-calculator"></i> Average Order:
-                        </span>
-                        <span
-                            class="footer-value">₱{{ number_format(($stats['revenue'] ?? 0) / max($stats['completed'] ?? 1, 1), 2) }}</span>
-                    </div>
-
-                @elseif($currentStatus === 'completed')
-                    <div class="footer-stat">
-                        <span class="footer-label">
-                            <i class="fas fa-check-circle" style="color: #576238;"></i> Completed Revenue:
-                        </span>
-                        <span class="footer-value">₱{{ number_format($stats['revenue'] ?? 0, 2) }}</span>
-                    </div>
-
-                @elseif($currentStatus === 'pending')
-                    <div class="footer-stat">
-                        <span class="footer-label">
-                            <i class="fas fa-hourglass-half" style="color: #D4A054;"></i> Pending Orders:
-                        </span>
-                        <span class="footer-value">{{ $stats['pending'] ?? 0 }} orders</span>
-                    </div>
-
-                @elseif($currentStatus === 'cancelled')
-                    <div class="footer-stat">
-                        <span class="footer-label">
-                            <i class="fas fa-times-circle" style="color: #C5705A;"></i> Cancelled Orders:
-                        </span>
-                        <span class="footer-value">{{ $stats['cancelled'] ?? 0 }} orders</span>
-                    </div>
-
-                @elseif($currentStatus === 'refunded')
-                    <div class="footer-stat">
-                        <span class="footer-label">
-                            <i class="fas fa-rotate-left" style="color: #8B7A6B;"></i> Refunded Orders:
-                        </span>
-                        <span class="footer-value">{{ $stats['refunded'] ?? 0 }} orders</span>
-                    </div>
-
-                @elseif($currentDate)
-                    <div class="footer-stat">
-                        <span class="footer-label">
-                            <i class="fas fa-calendar"></i> Filtered Orders:
-                        </span>
-                        <span class="footer-value">{{ $orders->total() }} orders</span>
-                    </div>
-
-                @elseif(request('search'))
-                    <div class="footer-stat">
-                        <span class="footer-label">
-                            <i class="fas fa-search"></i> Search Results:
-                        </span>
-                        <span class="footer-value">{{ $orders->total() }} orders</span>
-                    </div>
-                @endif
-            </div>
         </div>
     </div>
 
-    {{-- ============ CANCEL ORDER MODAL ============ --}}
+    {{-- ============ MODALS (Complete & Cancel) ============ --}}
+    <!-- Complete Order Modal -->
+    <div class="modal-overlay" id="completeModal" onclick="if(event.target===this) closeCompleteModal()">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3><i class="fas fa-check-circle" style="color: #576238;"></i> Complete Order</h3>
+                <button type="button" class="modal-close" onclick="closeCompleteModal()"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <form method="POST" action="" id="completeForm">
+                @csrf
+                @method('PATCH')
+                <div class="modal-body">
+                    <p style="margin-bottom: 1rem; color: #6B6A65;">Sigurado ka bang kumpleto na ang order na ito?</p>
+                    <div class="cancel-order-info" style="background: #E8F0E3; border-color: #C5D4A8;">
+                        <div class="cancel-info-item">
+                            <span class="cancel-info-label">Order No.</span>
+                            <span class="cancel-info-value" id="completeOrderId">—</span>
+                        </div>
+                        <div class="cancel-info-item">
+                            <span class="cancel-info-label">Customer</span>
+                            <span class="cancel-info-value" id="completeCustomerName">—</span>
+                        </div>
+                        <div class="cancel-info-item">
+                            <span class="cancel-info-label">Total Amount</span>
+                            <span class="cancel-info-value" style="color: #576238;" id="completeAmount">—</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" onclick="closeCompleteModal()">Cancel</button>
+                    <button type="submit" class="btn-confirm-complete"><i class="fas fa-check"></i> Yes, Complete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Cancel Order Modal -->
     <div class="modal-overlay" id="cancelModal" onclick="if(event.target===this) closeCancelModal()">
         <div class="modal-box">
             <div class="modal-header">
-                <h3>
-                    <i class="fas fa-exclamation-triangle" style="color: #C5705A;"></i>
-                    Cancel Order
-                </h3>
-                <button type="button" class="modal-close" onclick="closeCancelModal()">
-                    <i class="fas fa-times"></i>
-                </button>
+                <h3><i class="fas fa-exclamation-triangle" style="color: #C5705A;"></i> Cancel Order</h3>
+                <button type="button" class="modal-close" onclick="closeCancelModal()"><i class="fas fa-times"></i></button>
             </div>
-
             <form method="POST" action="" id="cancelForm">
                 @csrf
                 @method('PATCH')
-
                 <div class="modal-body">
                     <div class="modal-warning">
                         <i class="fas fa-info-circle"></i>
-                        <div>
-                            Ang pag-cancel ng order ay <strong>hindi na maibabalik</strong>. Ang stock ng mga item ay
+                        <div>Ang pag-cancel ng order ay <strong>hindi na maibabalik</strong>. Ang stock ay
                             <strong>ibabalik</strong> sa inventory.
                         </div>
                     </div>
-
                     <div class="cancel-order-info">
                         <div class="cancel-info-item">
                             <span class="cancel-info-label">Order No.</span>
@@ -460,64 +345,68 @@
                             <span class="cancel-info-value cancel-amount" id="cancelAmount">—</span>
                         </div>
                     </div>
-
                     <div class="modal-form-group">
-                        <label for="cancel_reason">
-                            Reason for Cancellation <span class="required">*</span>
-                        </label>
+                        <label>Reason for Cancellation <span class="required">*</span></label>
                         <textarea name="cancel_reason" id="cancel_reason" rows="3" required
-                            placeholder="Example: Customer changed mind, duplicate order, out of stock..."
-                            class="modal-textarea"></textarea>
+                            placeholder="Example: Customer changed mind..." class="modal-textarea"></textarea>
                     </div>
                 </div>
-
                 <div class="modal-footer">
-                    <button type="button" class="btn-cancel" onclick="closeCancelModal()">
-                        <i class="fas fa-times"></i> Cancel
-                    </button>
-                    <button type="submit" class="btn-confirm-cancel">
-                        <i class="fas fa-times-circle"></i> Confirm Cancel
-                    </button>
+                    <button type="button" class="btn-cancel" onclick="closeCancelModal()">Cancel</button>
+                    <button type="submit" class="btn-confirm-cancel"><i class="fas fa-times-circle"></i> Confirm
+                        Cancel</button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
+        // ========== CLICKABLE ROWS ==========
+        document.querySelectorAll('.clickable-row').forEach(function (row) {
+            row.addEventListener('click', function () {
+                window.location.href = this.dataset.href;
+            });
+        });
+
+        // Complete Modal Functions
+        function openCompleteModal(orderId, customerName, amount) {
+            document.getElementById('completeOrderId').textContent = '#' + String(orderId).padStart(5, '0');
+            document.getElementById('completeCustomerName').textContent = customerName;
+            document.getElementById('completeAmount').textContent = '₱' + amount;
+            document.getElementById('completeForm').action = '{{ url("orders") }}/' + orderId + '/complete';
+            document.getElementById('completeModal').classList.add('active');
+        }
+        function closeCompleteModal() {
+            document.getElementById('completeModal').classList.remove('active');
+        }
+
+        // Cancel Modal Functions
         function openCancelModal(orderId, customerName, amount) {
             document.getElementById('cancelOrderId').textContent = '#' + String(orderId).padStart(5, '0');
             document.getElementById('cancelCustomerName').textContent = customerName;
             document.getElementById('cancelAmount').textContent = '₱' + amount;
-
-            const form = document.getElementById('cancelForm');
-            form.action = '{{ url("orders") }}/' + orderId + '/cancel';
-
+            document.getElementById('cancelForm').action = '{{ url("orders") }}/' + orderId + '/cancel';
             document.getElementById('cancel_reason').value = '';
             document.getElementById('cancelModal').classList.add('active');
-
             setTimeout(() => document.getElementById('cancel_reason').focus(), 100);
         }
-
         function closeCancelModal() {
             document.getElementById('cancelModal').classList.remove('active');
         }
 
+        // ESC Key
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
+                closeCompleteModal();
                 closeCancelModal();
             }
         });
 
-        document.addEventListener('DOMContentLoaded', function () {
-            ['flashAlert', 'flashError', 'flashInfo'].forEach(function (id) {
-                const el = document.getElementById(id);
-                if (el) {
-                    setTimeout(() => {
-                        el.style.transition = 'opacity 0.5s ease';
-                        el.style.opacity = '0';
-                        setTimeout(() => el.remove(), 500);
-                    }, 5000);
-                }
+        // Handle alert dismiss
+        document.querySelectorAll('[data-dismiss]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const target = document.getElementById(this.dataset.dismiss);
+                if (target) target.remove();
             });
         });
     </script>
@@ -541,14 +430,14 @@
 
         .page-header-left h1 {
             font-family: 'Playfair Display', serif;
-            font-size: 1.75rem;
+            font-size: 1.5rem;
             font-weight: 600;
             color: #2C2B26;
             margin: 0 0 0.25rem 0;
         }
 
         .page-description {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: #9E9D97;
             margin: 0;
         }
@@ -560,7 +449,6 @@
         }
 
         /* ============ BUTTONS ============ */
-        .btn-primary,
         .btn-secondary {
             display: inline-flex;
             align-items: center;
@@ -571,26 +459,12 @@
             font-size: 0.85rem;
             font-weight: 500;
             transition: all 0.2s ease;
-            border: none;
+            border: 1px solid #E3DCD0;
+            background: white;
+            color: #6B6A65;
             cursor: pointer;
             font-family: inherit;
             line-height: 1;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #7A8B4F, #576238);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(87, 98, 56, 0.3);
-        }
-
-        .btn-secondary {
-            background: white;
-            color: #6B6A65;
-            border: 1px solid #E3DCD0;
         }
 
         .btn-secondary:hover {
@@ -607,7 +481,6 @@
             padding: 0.875rem 1rem;
             border-radius: 0.5rem;
             font-size: 0.85rem;
-            animation: slideDown 0.3s ease;
             position: relative;
         }
 
@@ -623,12 +496,6 @@
             color: #C5705A;
         }
 
-        .alert-info {
-            background: #E3EDF5;
-            border: 1px solid #3E6B8C;
-            color: #3E6B8C;
-        }
-
         .alert-close {
             background: transparent;
             border: none;
@@ -642,18 +509,6 @@
 
         .alert-close:hover {
             opacity: 1;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         /* ============ STATS GRID ============ */
@@ -686,7 +541,6 @@
             transition: all 0.2s ease;
             text-decoration: none;
             color: inherit;
-            position: relative;
         }
 
         .stat-card:hover {
@@ -763,8 +617,9 @@
         }
 
         .card-header {
+            background: #FDF8F0;
             padding: 1.25rem;
-            border-bottom: 1px solid #F0EADC;
+            border-bottom: 1px solid #E3DCD0;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -801,148 +656,120 @@
             font-weight: 600;
         }
 
-        /* ============ FILTERS BAR ============ */
-        .filters-bar {
+        /* ============ FILTER TABS ============ */
+        .filter-tabs {
+            display: flex;
+            gap: 0.5rem;
             padding: 1rem 1.25rem;
-            background: #FDF8F0;
-            border-bottom: 1px solid #E3DCD0;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .search-form {
-            flex: 1;
-            min-width: 280px;
-            max-width: 400px;
-            margin: 0;
-        }
-
-        .search-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 0.875rem;
-            color: #9E9D97;
-            font-size: 0.85rem;
-            pointer-events: none;
-        }
-
-        .search-wrapper input {
-            width: 100%;
-            padding: 0.55rem 4rem 0.55rem 2.5rem;
-            border: 1px solid #E3DCD0;
-            border-radius: 0.5rem;
-            font-size: 0.8rem;
-            font-family: 'Inter', sans-serif;
             background: white;
-            transition: all 0.2s ease;
+            border-bottom: 1px solid #E3DCD0;
+            overflow-x: auto;
+            white-space: nowrap;
+            scrollbar-width: thin;
         }
 
-        .search-wrapper input:focus {
-            outline: none;
-            border-color: #576238;
-            box-shadow: 0 0 0 3px rgba(87, 98, 56, 0.1);
-        }
-
-        .search-wrapper input::placeholder {
-            color: #C4C3BC;
-        }
-
-        .clear-search {
-            position: absolute;
-            right: 3rem;
-            color: #9E9D97;
-            text-decoration: none;
-            font-size: 0.75rem;
-            padding: 0.25rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: color 0.2s;
-        }
-
-        .clear-search:hover {
-            color: #C5705A;
-        }
-
-        .search-btn {
-            position: absolute;
-            right: 0.25rem;
-            background: #576238;
-            color: white;
-            border: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 0.375rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            transition: all 0.2s;
-        }
-
-        .search-btn:hover {
-            background: #3E4A28;
-        }
-
-        .filter-buttons {
-            display: flex;
-            gap: 0.4rem;
-            flex-wrap: wrap;
-        }
-
-        .filter-btn {
+        .filter-tab {
             display: inline-flex;
             align-items: center;
-            gap: 0.35rem;
-            padding: 0.45rem 0.875rem;
-            border: 1px solid #E3DCD0;
-            background: white;
-            color: #6B6A65;
+            gap: 0.4rem;
+            padding: 0.4rem 0.9rem;
             border-radius: 2rem;
             font-size: 0.75rem;
             font-weight: 500;
+            background: white;
+            color: #6B6A65;
+            border: 1px solid #E3DCD0;
             text-decoration: none;
             transition: all 0.2s ease;
-            line-height: 1;
+            flex-shrink: 0;
         }
 
-        .filter-btn:hover {
+        .filter-tab:hover {
             border-color: #576238;
             color: #576238;
         }
 
-        .filter-btn.active {
+        .filter-tab.active {
             background: #576238;
             color: white;
             border-color: #576238;
         }
 
-        .date-filter {
-            margin-left: auto;
+        .filter-tab .count {
+            background: #F0EADC;
+            color: #576238;
+            padding: 0.1rem 0.45rem;
+            border-radius: 2rem;
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+
+        .filter-tab.active .count {
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+        }
+
+        /* ============ FILTER BAR ============ */
+        .filter-bar {
+            padding: 0.75rem 1.25rem;
+            background: white;
+            border-bottom: 1px solid #F0EADC;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-group label {
+            font-size: 0.75rem;
+            color: #7A7A75;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
         }
 
         .filter-select {
-            padding: 0.45rem 0.875rem;
+            padding: 0.4rem 0.7rem;
             border: 1px solid #E3DCD0;
-            border-radius: 0.5rem;
-            font-size: 0.75rem;
-            font-family: inherit;
+            border-radius: 0.375rem;
+            font-size: 0.72rem;
             background: white;
-            cursor: pointer;
             color: #2C2B26;
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+            font-family: inherit;
+        }
+
+        .filter-select:hover {
+            border-color: #576238;
         }
 
         .filter-select:focus {
             outline: none;
             border-color: #576238;
+        }
+
+        .btn-clear-filters {
+            background: #FEF0ED;
+            color: #C5705A;
+            padding: 0.4rem 0.7rem;
+            border-radius: 0.375rem;
+            font-size: 0.7rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .btn-clear-filters:hover {
+            background: #C5705A;
+            color: white;
         }
 
         /* ============ TABLE ============ */
@@ -956,7 +783,7 @@
             border-collapse: collapse;
             font-family: 'Inter', sans-serif;
             font-size: 0.85rem;
-            min-width: 900px;
+            table-layout: fixed;
         }
 
         .data-table thead tr {
@@ -965,7 +792,7 @@
         }
 
         .data-table th {
-            padding: 1rem;
+            padding: 0.875rem 1rem;
             text-align: left;
             font-weight: 600;
             color: #576238;
@@ -975,71 +802,73 @@
             white-space: nowrap;
         }
 
+        /* ✅ Center alignment utility */
+        .data-table th.text-center,
+        .data-table td.text-center {
+            text-align: center !important;
+        }
+
         .data-table td {
-            padding: 1rem;
+            padding: 1rem 1rem;
             color: #2C2B26;
             border-bottom: 1px solid #F0EADC;
             vertical-align: middle;
         }
 
-        .data-table tbody tr {
+        /* ✅ Clickable Row Styles */
+        .clickable-row {
+            cursor: pointer;
             transition: background 0.15s ease;
         }
 
-        .data-table tbody tr:hover {
+        .clickable-row:hover {
             background: #FDFBF7;
+        }
+
+        /* ✅ Prevent text selection sa buong row kapag dina-drag */
+        .clickable-row td {
+            user-select: none;
         }
 
         .data-table tbody tr:last-child td {
             border-bottom: none;
         }
 
+        /* ✅ Responsive Column Widths */
         .col-order {
-            width: 110px;
+            width: 12%;
         }
 
         .col-customer {
-            width: auto;
-            min-width: 180px;
+            width: 34%;
         }
 
         .col-amount {
-            width: 130px;
+            width: 14%;
         }
 
         .col-type {
-            width: 120px;
+            width: 14%;
         }
 
         .col-status {
-            width: 130px;
+            width: 14%;
         }
 
         .col-date {
-            width: 140px;
+            width: 12%;
         }
 
-        .col-actions {
-            width: 100px;
-            text-align: center;
-        }
-
+        /* ✅ Ginawang parang badge yung Order No. pero hindi na link */
         .order-link {
             color: #576238;
             font-weight: 600;
-            text-decoration: none;
-            font-family: 'SF Mono', 'Monaco', monospace;
+            font-family: 'SF Mono', monospace;
             font-size: 0.8rem;
             background: #F0EADC;
             padding: 0.3rem 0.6rem;
             border-radius: 0.375rem;
             display: inline-block;
-            transition: all 0.2s;
-        }
-
-        .order-link:hover {
-            background: #576238;
-            color: white;
         }
 
         .customer-cell {
@@ -1049,59 +878,59 @@
         }
 
         .customer-avatar {
-            width: 38px;
-            height: 38px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
             background: linear-gradient(135deg, #7A8B4F, #576238);
             color: white;
-            border-radius: 50%;
+            font-weight: 600;
+            font-size: 0.85rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 600;
-            font-size: 0.9rem;
             flex-shrink: 0;
         }
 
         .customer-text {
             display: flex;
             flex-direction: column;
-            gap: 0.15rem;
+            gap: 0.1rem;
             min-width: 0;
         }
 
         .customer-name {
-            display: block;
-            font-weight: 500;
+            font-weight: 600;
             color: #2C2B26;
+            display: block;
             font-size: 0.85rem;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 160px;
         }
 
         .customer-phone {
-            display: block;
             font-size: 0.7rem;
             color: #9E9D97;
+            display: block;
         }
 
         .amount {
             font-weight: 700;
             color: #2C2B26;
             font-size: 0.9rem;
-            font-family: 'Inter', sans-serif;
         }
 
         .type-badge {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 0.35rem;
             padding: 0.3rem 0.7rem;
             border-radius: 2rem;
             font-size: 0.7rem;
             font-weight: 500;
             white-space: nowrap;
+            min-width: 90px;
         }
 
         .type-pickup {
@@ -1117,12 +946,14 @@
         .status-badge {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 0.35rem;
             padding: 0.3rem 0.75rem;
             border-radius: 2rem;
             font-size: 0.7rem;
             font-weight: 600;
             white-space: nowrap;
+            min-width: 100px;
         }
 
         .status-completed {
@@ -1145,151 +976,74 @@
             color: #8B7A6B;
         }
 
-        .date-cell {
-            display: flex;
-            flex-direction: column;
-            gap: 0.15rem;
-        }
-
-        .date-cell .date {
-            font-weight: 500;
+        .date-primary {
+            display: block;
+            font-size: 0.78rem;
             color: #2C2B26;
-            font-size: 0.8rem;
-            white-space: nowrap;
+            font-weight: 500;
         }
 
-        .date-cell .time {
-            font-size: 0.7rem;
+        .date-time {
+            display: block;
+            font-size: 0.68rem;
             color: #9E9D97;
+            margin-top: 0.1rem;
         }
 
-        .action-buttons {
-            display: flex;
-            gap: 0.35rem;
-            justify-content: center;
-            align-items: center;
+        /* ============ EMPTY STATE ============ */
+        .empty-row td {
+            padding: 0 !important;
         }
 
-        .action-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 34px;
-            height: 34px;
-            border-radius: 0.5rem;
-            border: 1px solid #E3DCD0;
-            background: white;
-            color: #6B6A65;
-            text-decoration: none;
-            font-size: 0.8rem;
-            transition: all 0.2s ease;
-            cursor: pointer;
-            font-family: inherit;
-            padding: 0;
-        }
-
-        .action-view:hover {
-            background: #576238;
-            color: white;
-            border-color: #576238;
-        }
-
-        .action-cancel {
-            color: #C5705A;
-            border-color: #F8DCD4;
-        }
-
-        .action-cancel:hover {
-            background: #C5705A;
-            color: white;
-            border-color: #C5705A;
-        }
-
-        /* ============ EMPTY STATE (FIXED) ============ */
         .empty-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2.5rem 1.5rem;
             text-align: center;
-            gap: 0.875rem;
+            padding: 3.5rem 2rem;
         }
 
         .empty-icon {
-            width: 60px;
-            height: 60px;
+            width: 80px;
+            height: 80px;
             background: #F0EADC;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 0.25rem;
+            margin: 0 auto 1.25rem;
         }
 
         .empty-icon i {
-            font-size: 1.5rem;
+            font-size: 2rem;
             color: #C4C3BC;
         }
 
         .empty-state p {
-            color: #9E9D97;
-            font-size: 0.85rem;
-            margin: 0;
-            line-height: 1.5;
+            color: #6B6A65;
+            margin-bottom: 0.35rem;
+            font-weight: 500;
+            font-size: 0.9rem;
         }
 
-        .btn-clear-filter {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            background: #FEF0ED;
-            color: #C5705A;
-            border: 1px solid #F8DCD4;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            text-decoration: none;
-            font-size: 0.75rem;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            font-family: inherit;
-            line-height: 1;
+        .link-clear {
+            color: #576238;
+            text-decoration: underline;
+            font-size: 0.8rem;
         }
 
-        .btn-clear-filter:hover {
-            background: #C5705A;
-            color: white;
-            border-color: #C5705A;
-            transform: translateY(-1px);
-        }
-
-        .btn-clear-filter i {
-            font-size: 0.7rem;
-        }
-
-        /* ============ PAGINATION (PROFESSIONAL) ============ */
-        .pagination-wrapper {
-            padding: 1.25rem 1.5rem;
+        /* ============ CUSTOM PAGINATION ============ */
+        .pagination {
+            padding: 1.25rem;
             border-top: 1px solid #E3DCD0;
+            background: #FDF8F0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
             gap: 1rem;
-            background: #FDF8F0;
+            flex-wrap: wrap;
         }
 
         .pagination-info {
             font-size: 0.8rem;
             color: #6B6A65;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .pagination-info i {
-            color: #576238;
-            font-size: 0.75rem;
         }
 
         .pagination-info strong {
@@ -1297,29 +1051,19 @@
             font-weight: 600;
         }
 
-        .custom-pagination {
-            display: inline-block;
-        }
-
-        .pagination-list {
+        .pagination-links {
             display: flex;
             gap: 0.375rem;
-            list-style: none;
-            margin: 0;
-            padding: 0;
             align-items: center;
+            flex-wrap: wrap;
         }
 
-        .pagination-item {
-            display: inline-block;
-        }
-
-        .pagination-link {
+        .page-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 38px;
-            height: 38px;
+            min-width: 34px;
+            height: 34px;
             padding: 0 0.75rem;
             border-radius: 0.5rem;
             font-size: 0.8rem;
@@ -1329,12 +1073,10 @@
             border: 1px solid #E3DCD0;
             text-decoration: none;
             transition: all 0.2s ease;
-            font-family: 'Inter', sans-serif;
             cursor: pointer;
-            line-height: 1;
         }
 
-        .pagination-link:hover {
+        .page-btn:hover:not(.disabled) {
             background: #F0EADC;
             border-color: #576238;
             color: #576238;
@@ -1342,75 +1084,22 @@
             box-shadow: 0 2px 6px rgba(87, 98, 56, 0.1);
         }
 
-        .pagination-item.active .pagination-link {
+        .page-btn.active {
             background: #576238;
-            border-color: #576238;
             color: white;
+            border-color: #576238;
             font-weight: 700;
             cursor: default;
             box-shadow: 0 2px 8px rgba(87, 98, 56, 0.25);
         }
 
-        .pagination-item.active .pagination-link:hover {
-            transform: none;
-            background: #576238;
-            color: white;
-        }
-
-        .pagination-item.disabled .pagination-link {
+        .page-btn.disabled {
             background: #F0EADC;
             color: #C4C3BC;
             border-color: #E3DCD0;
             cursor: not-allowed;
             opacity: 0.6;
-        }
-
-        .pagination-item.disabled .pagination-link:hover {
-            transform: none;
-            background: #F0EADC;
-            color: #C4C3BC;
-            border-color: #E3DCD0;
-            box-shadow: none;
-        }
-
-        .pagination-link i {
-            font-size: 0.7rem;
-        }
-
-        /* ============ CARD FOOTER ============ */
-        .card-footer {
-            padding: 1rem 1.25rem;
-            background: #FDF8F0;
-            border-top: 1px solid #E3DCD0;
-            display: flex;
-            justify-content: flex-end;
-            gap: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .footer-stat {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.85rem;
-        }
-
-        .footer-label {
-            color: #6B6A65;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
-        }
-
-        .footer-label i {
-            font-size: 0.75rem;
-        }
-
-        .footer-value {
-            color: #576238;
-            font-weight: 700;
-            font-family: 'Inter', sans-serif;
+            pointer-events: none;
         }
 
         /* ============ MODAL ============ */
@@ -1574,20 +1263,16 @@
             font-family: inherit;
             color: #2C2B26;
             background: white;
-            resize: vertical;
             transition: all 0.2s ease;
-            min-height: 80px;
             box-sizing: border-box;
+            min-height: 80px;
+            resize: vertical;
         }
 
         .modal-textarea:focus {
             outline: none;
             border-color: #576238;
             box-shadow: 0 0 0 4px rgba(87, 98, 56, 0.1);
-        }
-
-        .modal-textarea::placeholder {
-            color: #C4C3BC;
         }
 
         .modal-footer {
@@ -1621,6 +1306,28 @@
             color: #576238;
         }
 
+        .btn-confirm-complete {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: #576238;
+            color: white;
+            border: none;
+            padding: 0.6rem 1.25rem;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .btn-confirm-complete:hover {
+            background: #3E4A28;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(87, 98, 56, 0.3);
+        }
+
         .btn-confirm-cancel {
             display: inline-flex;
             align-items: center;
@@ -1641,41 +1348,6 @@
             background: #A85444;
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(197, 112, 90, 0.3);
-        }
-
-        @media (max-width: 768px) {
-            .filters-bar {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .search-form {
-                max-width: 100%;
-                min-width: 0;
-            }
-
-            .date-filter {
-                margin-left: 0;
-            }
-
-            .filter-buttons {
-                justify-content: flex-start;
-            }
-
-            .card-footer {
-                justify-content: space-between;
-                gap: 1rem;
-            }
-
-            .pagination-wrapper {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .custom-pagination {
-                display: flex;
-                justify-content: center;
-            }
         }
     </style>
 @endsection

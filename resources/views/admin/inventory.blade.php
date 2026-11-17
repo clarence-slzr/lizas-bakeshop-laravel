@@ -65,7 +65,7 @@
                         <span>{{ $criticalCount }} product(s) have <strong>critically low stock</strong> (below 5).</span>
                     @endif
                 </div>
-                <a href="{{ $buildURL(['stock' => 'critical', 'page' => 1]) }}" class="btn-critical">View Critical Items</a>
+                <a href="{{ $buildURL(['stock' => 'low_or_out', 'page' => 1]) }}" class="btn-critical">View Critical Items</a>
             </div>
         @endif
 
@@ -151,6 +151,7 @@
                         <option value="{{ $buildURL(['stock' => 'good', 'page' => 1]) }}" {{ $filterStock === 'good' ? 'selected' : '' }}>Good Stock (10+)</option>
                         <option value="{{ $buildURL(['stock' => 'low', 'page' => 1]) }}" {{ $filterStock === 'low' ? 'selected' : '' }}>Low Stock (1-9)</option>
                         <option value="{{ $buildURL(['stock' => 'critical', 'page' => 1]) }}" {{ $filterStock === 'critical' ? 'selected' : '' }}>Critical (&lt; 5)</option>
+                        <option value="{{ $buildURL(['stock' => 'low_or_out', 'page' => 1]) }}" {{ $filterStock === 'low_or_out' ? 'selected' : '' }}>Low or Out of Stock (&lt; 10)</option>
                         <option value="{{ $buildURL(['stock' => 'out', 'page' => 1]) }}" {{ $filterStock === 'out' ? 'selected' : '' }}>Out of Stock (0)</option>
                     </select>
 
@@ -1505,7 +1506,6 @@
             font-size: 0.75rem;
         }
 
-        /* ============ PRINT ============ */
         @media print {
             .no-print {
                 display: none !important;

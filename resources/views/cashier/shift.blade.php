@@ -83,19 +83,22 @@
                                 <div class="active-stat-divider"></div>
                                 <div class="active-stat-item">
                                     <span class="active-stat-label">Live Sales</span>
-                                    <span class="active-stat-value">₱{{ number_format($liveTotal ?? 0, 2) }}</span>
+                                    <span class="active-stat-value"
+                                        id="live-sales-display">₱{{ number_format($liveTotal ?? 0, 2) }}</span>
                                 </div>
                             </div>
 
                             <div class="active-stats">
                                 <div class="active-stat-item">
                                     <span class="active-stat-label">Live Orders</span>
-                                    <span class="active-stat-value">{{ number_format($liveOrders ?? 0) }}</span>
+                                    <span class="active-stat-value"
+                                        id="live-orders-display">{{ number_format($liveOrders ?? 0) }}</span>
                                 </div>
                                 <div class="active-stat-divider"></div>
                                 <div class="active-stat-item">
                                     <span class="active-stat-label">Expected Cash</span>
-                                    <span class="active-stat-value">₱{{ number_format($expectedCash ?? 0, 2) }}</span>
+                                    <span class="active-stat-value"
+                                        id="expected-cash-display">₱{{ number_format($expectedCash ?? 0, 2) }}</span>
                                 </div>
                             </div>
 
@@ -274,11 +277,12 @@
                                     }
                                 @endphp
                                 <tr>
+                                    <!-- ✅ INAYOS: Dinagdag ang format ng petsa sa dulo (End Date) -->
                                     <td>
                                         <span class="date-primary">{{ $start->format('M d, Y') }}</span>
                                         <span class="date-time">
                                             {{ $start->format('h:i A') }}
-                                            @if($end) → {{ $end->format('h:i A') }} @endif
+                                            @if($end) → {{ $end->format('M d, Y h:i A') }} @endif
                                         </span>
                                     </td>
                                     <td>
@@ -336,11 +340,36 @@
         </div>
     </div>
 
+    @if($activeShift)
+        <!-- ✅ AUTO REAL-TIME SCRIPT -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                function updateLiveStats() {
+                    fetch('{{ route("cashier.shift.live-stats") }}')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.active) {
+                                document.getElementById('live-sales-display').textContent = '₱' + data.liveTotal;
+                                document.getElementById('live-orders-display').textContent = data.liveOrders;
+                                document.getElementById('expected-cash-display').textContent = '₱' + data.expectedCash;
+                            }
+                        })
+                        .catch(error => console.log('Auto-refresh error:', error));
+                }
+
+                setInterval(updateLiveStats, 5000);
+            });
+        </script>
+    @endif
+
     <style>
         .shift-container {
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding-bottom: 2rem;
         }
 
         .page-header {
@@ -433,6 +462,7 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 1.5rem;
+            align-items: stretch;
         }
 
         @media (max-width: 900px) {
@@ -449,16 +479,18 @@
             border-radius: 0.75rem;
             overflow: hidden;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+            display: flex;
+            flex-direction: column;
         }
 
         .action-card-header,
         .overview-header {
             background: #FDF8F0;
-            padding: 1.25rem;
+            padding: 1.25rem 1.5rem;
             border-bottom: 1px solid #E3DCD0;
             display: flex;
             align-items: center;
-            gap: 0.875rem;
+            gap: 1rem;
         }
 
         .header-icon {
@@ -490,14 +522,19 @@
         }
 
         .action-card-body {
-            padding: 2rem 1.5rem;
+            padding: 2rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .start-shift-info,
         .active-shift-info {
             text-align: center;
-            max-width: 420px;
+            max-width: 100%;
             margin: 0 auto;
+            width: 100%;
         }
 
         .start-icon-wrap {
@@ -566,6 +603,7 @@
             display: flex;
             flex-direction: column;
             gap: 0.25rem;
+            width: 100%;
         }
 
         .active-stat-label {
@@ -576,19 +614,18 @@
             font-weight: 600;
         }
 
-        /* ============ ACTIVE STAT VALUE — INTER FONT NA PARA TUGMA SA DASHBOARD ============ */
         .active-stat-value {
             font-size: 1.05rem;
             font-weight: 700;
             color: #2C2B26;
             font-family: 'Inter', sans-serif;
-        
         }
 
         .active-stat-divider {
             width: 1px;
             height: 32px;
             background: #E3DCD0;
+            flex-shrink: 0;
         }
 
         .form-group {
@@ -685,17 +722,19 @@
         }
 
         .overview-body {
-            padding: 1.25rem;
+            padding: 1.5rem;
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
+            gap: 1rem;
+            flex: 1;
+            justify-content: center;
         }
 
         .overview-item {
             display: flex;
             align-items: center;
             gap: 1rem;
-            padding: 1rem;
+            padding: 1rem 1.25rem;
             background: #FDF8F0;
             border: 1px solid #F0EADC;
             border-radius: 0.75rem;
@@ -748,14 +787,12 @@
             min-width: 0;
         }
 
-        /* ============ OVERVIEW VALUE — INTER FONT NA PARA TUGMA SA DASHBOARD ============ */
         .overview-value {
             display: block;
             font-size: 1.15rem;
             font-weight: 700;
             color: #2C2B26;
             font-family: 'Inter', sans-serif;
-            /* ← BINAGO: dating 'Playfair Display' */
             line-height: 1.2;
         }
 
@@ -771,7 +808,7 @@
 
         .history-header {
             background: #FDF8F0;
-            padding: 1.25rem;
+            padding: 1.25rem 1.5rem;
             border-bottom: 1px solid #E3DCD0;
             display: flex;
             justify-content: space-between;
@@ -783,7 +820,7 @@
         .history-header-left {
             display: flex;
             align-items: center;
-            gap: 0.875rem;
+            gap: 1rem;
         }
 
         .history-header h3 {
@@ -806,11 +843,12 @@
             border-radius: 2rem;
             font-size: 0.7rem;
             font-weight: 600;
-            margin-left: 0.25rem;
+            margin-left: auto;
         }
 
         .table-wrapper {
             overflow-x: auto;
+            width: 100%;
         }
 
         .history-table {
@@ -819,6 +857,7 @@
             font-family: 'Inter', sans-serif;
             font-size: 0.8125rem;
             line-height: 1.5;
+            table-layout: fixed;
         }
 
         .history-table thead tr {
@@ -827,8 +866,8 @@
         }
 
         .history-table th {
-            padding: 0.875rem 1.25rem;
-            text-align: left;
+            padding: 1.25rem 1rem;
+            text-align: center;
             font-weight: 600;
             color: #576238;
             font-size: 0.7rem;
@@ -838,11 +877,15 @@
         }
 
         .history-table td {
-            padding: 1rem 1.25rem;
-            text-align: left;
+            padding: 1.25rem 1rem;
+            text-align: center;
             color: #2C2B26;
             border-bottom: 1px solid #F0EADC;
             vertical-align: middle;
+        }
+
+        .history-table tbody tr:last-child td {
+            border-bottom: none;
         }
 
         .history-table tbody tr:hover {
@@ -866,6 +909,7 @@
         .duration-badge {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             padding: 0.3rem 0.7rem;
             background: #F0EADC;
             color: #576238;
@@ -901,6 +945,7 @@
         .variance-badge {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             padding: 0.3rem 0.7rem;
             border-radius: 2rem;
             font-size: 0.72rem;
@@ -921,6 +966,7 @@
         .status-badge {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 0.35rem;
             padding: 0.3rem 0.7rem;
             border-radius: 2rem;
@@ -950,7 +996,7 @@
 
         .empty-state {
             text-align: center;
-            padding: 3.5rem 2rem;
+            padding: 4rem 2rem;
         }
 
         .empty-icon {
@@ -992,7 +1038,7 @@
             }
 
             .action-card-body {
-                padding: 1.5rem 1rem;
+                padding: 1.5rem;
             }
 
             .active-stats {
@@ -1003,6 +1049,12 @@
             .active-stat-divider {
                 width: 100%;
                 height: 1px;
+            }
+
+            .history-table th,
+            .history-table td {
+                padding: 1rem 0.5rem;
+                font-size: 0.75rem;
             }
         }
     </style>

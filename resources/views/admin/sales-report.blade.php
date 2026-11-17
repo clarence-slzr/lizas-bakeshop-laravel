@@ -2,10 +2,7 @@
 
 @section('content')
     @php
-        date_default_timezone_set('Asia/Manila');
-
         use App\Models\Order;
-        use App\Models\Product;
         use Illuminate\Support\Facades\DB;
 
         // ============================================
@@ -50,31 +47,43 @@
                     break;
             }
         } else {
-            if (empty($from_date))
+            if (empty($from_date)) {
                 $from_date = date('Y-m-01');
-            if (empty($to_date))
+            }
+            if (empty($to_date)) {
                 $to_date = date('Y-m-d');
+            }
         }
 
         // VALIDATE DATES
-        if (!strtotime($from_date))
+        $from_ts = strtotime($from_date);
+        $to_ts = strtotime($to_date);
+
+        if (!$from_ts) {
             $from_date = date('Y-m-01');
-        if (!strtotime($to_date))
+            $from_ts = strtotime($from_date);
+        }
+        if (!$to_ts) {
             $to_date = date('Y-m-d');
-        if (strtotime($from_date) > strtotime($to_date)) {
-            $temp = $from_date;
+            $to_ts = strtotime($to_date);
+        }
+        if ($from_ts > $to_ts) {
+            $temp_date = $from_date;
             $from_date = $to_date;
-            $to_date = $temp;
+            $to_date = $temp_date;
+            $temp_ts = $from_ts;
+            $from_ts = $to_ts;
+            $to_ts = $temp_ts;
         }
 
         // PREVIOUS PERIOD
-        $from_ts = strtotime($from_date);
-        $to_ts = strtotime($to_date);
         $days_diff = max(1, round(($to_ts - $from_ts) / 86400) + 1);
         $prev_to = date('Y-m-d', strtotime($from_date . ' -1 day'));
         $prev_from = date('Y-m-d', strtotime($prev_to . ' -' . ($days_diff - 1) . ' days'));
 
+        // ============================================
         // DAILY SALES (completed lang — para sa chart at revenue)
+        // ============================================
         $daily = Order::select(
             DB::raw('DATE(order_date) as date'),
             DB::raw('COUNT(*) as total_orders'),
@@ -87,11 +96,17 @@
             ->get()
             ->toArray();
 
+        // ============================================
         // BEST SELLING PRODUCTS
+        // ============================================
         $best = DB::table('order_items')
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->select('products.name', DB::raw('SUM(order_items.quantity) as total_sold'), DB::raw('SUM(order_items.quantity * order_items.price) as total_revenue'))
+            ->select(
+                'products.name',
+                DB::raw('SUM(order_items.quantity) as total_sold'),
+                DB::raw('SUM(order_items.quantity * order_items.price) as total_revenue')
+            )
             ->where('orders.status', 'completed')
             ->whereBetween(DB::raw('DATE(orders.order_date)'), [$from_date, $to_date])
             ->groupBy('products.id', 'products.name')
@@ -101,45 +116,39 @@
             ->toArray();
 
         // ============================================
-        // SUMMARY STATS (FIXED)
+        // SUMMARY STATS
         // ============================================
-        // Revenue — completed lang
         $totalRevenue = array_sum(array_column($daily, 'total_sales'));
-
-        // ✅ Completed orders count (para sa avg order value)
         $completedCount = array_sum(array_column($daily, 'total_orders'));
 
-        // ✅ Total Orders — LAHAT NG STATUS (completed + pending + cancelled)
         $totalOrders = Order::whereBetween(DB::raw('DATE(order_date)'), [$from_date, $to_date])->count();
 
-        // ✅ Average Daily Sales — base sa completed orders (revenue ÷ days na may sales)
-        $avgDailySales = count($daily) > 0 ? $totalRevenue / count($daily) : 0;
+        // Average Daily Sales — Total Revenue ÷ Days in Range
+        $avgDailySales = $days_diff > 0 ? $totalRevenue / $days_diff : 0;
 
-        // ✅ Average Order Value — revenue ÷ completed orders (hindi kasama cancelled/pending)
+        // Average Order Value — Revenue ÷ Completed Orders
         $avgOrderValue = $completedCount > 0 ? $totalRevenue / $completedCount : 0;
 
         // ============================================
-        // PREVIOUS PERIOD STATS (FIXED)
+        // PREVIOUS PERIOD STATS
         // ============================================
-        // Previous revenue — completed lang
         $prevRevenue = (float) Order::where('status', 'completed')
             ->whereBetween(DB::raw('DATE(order_date)'), [$prev_from, $prev_to])
             ->sum('total_amount');
 
-        // ✅ Previous orders — lahat ng status
         $prevOrders = (int) Order::whereBetween(DB::raw('DATE(order_date)'), [$prev_from, $prev_to])
             ->count();
 
         $revenueGrowth = $prevRevenue > 0 ? (($totalRevenue - $prevRevenue) / $prevRevenue) * 100 : 0;
         $ordersGrowth = $prevOrders > 0 ? (($totalOrders - $prevOrders) / $prevOrders) * 100 : 0;
 
-        // UNIQUE CUSTOMERS (completed lang)
+        // UNIQUE CUSTOMERS
         $uniqueCustomers = Order::where('status', 'completed')
             ->whereBetween(DB::raw('DATE(order_date)'), [$from_date, $to_date])
             ->distinct('customer_name')
             ->count('customer_name');
 
-        // ORDER STATUS BREAKDOWN (lahat ng status)
+        // ORDER STATUS BREAKDOWN
         $statusBreakdown = Order::whereBetween(DB::raw('DATE(order_date)'), [$from_date, $to_date])
             ->select('status', DB::raw('COUNT(*) as count'))
             ->groupBy('status')
@@ -169,7 +178,9 @@
             ->get()
             ->toArray();
 
+        // ============================================
         // CHART DATA
+        // ============================================
         $chartLabels = [];
         $chartValues = [];
         foreach (array_reverse($daily) as $d) {
@@ -177,14 +188,15 @@
             $chartValues[] = (float) $d['total_sales'];
         }
 
-        // HELPER: Format growth
-        function formatGrowth($value)
-        {
+        // ============================================
+        // HELPER: Format growth (closure — hindi global function)
+        // ============================================
+        $formatGrowth = function ($value) {
             $class = $value >= 0 ? 'up' : 'down';
             $icon = $value >= 0 ? 'arrow-up' : 'arrow-down';
-            $sign = $value >= 0 ? '+' : '';
+            $sign = $value > 0 ? '+' : '';
             return "<span class='growth-indicator $class'><i class='fas fa-$icon'></i> $sign" . number_format($value, 1) . "% vs prev</span>";
-        }
+        };
     @endphp
 
     <!-- Chart.js -->
@@ -192,7 +204,7 @@
 
     <div class="report-container">
 
-        <!-- ========== PAGE HEADER ========== -->
+        <!-- Page Header -->
         <div class="page-header">
             <div class="page-header-left">
                 <h1>Sales Report</h1>
@@ -200,7 +212,7 @@
             </div>
         </div>
 
-        <!-- ========== PRESET DATE RANGES ========== -->
+        <!-- Preset Date Ranges -->
         <div class="preset-ranges">
             <a href="?range=today" class="preset-btn {{ $range === 'today' ? 'active' : '' }}">Today</a>
             <a href="?range=yesterday" class="preset-btn {{ $range === 'yesterday' ? 'active' : '' }}">Yesterday</a>
@@ -212,7 +224,7 @@
                 Custom</a>
         </div>
 
-        <!-- ========== CUSTOM DATE FILTER ========== -->
+        <!-- Custom Date Filter -->
         @if($range === 'custom')
             <div class="filter-card">
                 <form method="GET" action="{{ route('admin.sales-report') }}" class="date-filter-form">
@@ -236,7 +248,7 @@
             </div>
         @endif
 
-        <!-- ========== DATE RANGE INFO ========== -->
+        <!-- Date Range Info -->
         <div class="date-range-info">
             <i class="fas fa-clock"></i>
             Showing report from
@@ -246,7 +258,7 @@
             <span class="days-badge">{{ $days_diff }} day{{ $days_diff != 1 ? 's' : '' }}</span>
         </div>
 
-        <!-- ========== SUMMARY CARDS ========== -->
+        <!-- Summary Cards -->
         <div class="summary-cards">
             <div class="summary-card">
                 <div class="summary-icon"><i class="fas fa-peso-sign"></i></div>
@@ -254,7 +266,7 @@
                     <h3>Total Revenue</h3>
                     <p class="summary-value">₱{{ number_format($totalRevenue, 2) }}</p>
                     @if($prevRevenue > 0)
-                        {!! formatGrowth($revenueGrowth) !!}
+                        {!! $formatGrowth($revenueGrowth) !!}
                     @else
                         <small class="no-prev">No previous data</small>
                     @endif
@@ -263,10 +275,10 @@
             <div class="summary-card">
                 <div class="summary-icon"><i class="fas fa-receipt"></i></div>
                 <div class="summary-info">
-                    <h3>Total Orders</h3>
+                    <h3>Total Orders (All Status)</h3>
                     <p class="summary-value">{{ number_format($totalOrders) }}</p>
                     @if($prevOrders > 0)
-                        {!! formatGrowth($ordersGrowth) !!}
+                        {!! $formatGrowth($ordersGrowth) !!}
                     @else
                         <small class="no-prev">No previous data</small>
                     @endif
@@ -277,7 +289,7 @@
                 <div class="summary-info">
                     <h3>Avg Daily Sales</h3>
                     <p class="summary-value">₱{{ number_format($avgDailySales, 2) }}</p>
-                    <small class="summary-sub">Average per day</small>
+                    <small class="summary-sub">Average per calendar day</small>
                 </div>
             </div>
             <div class="summary-card">
@@ -285,12 +297,12 @@
                 <div class="summary-info">
                     <h3>Avg Order Value</h3>
                     <p class="summary-value">₱{{ number_format($avgOrderValue, 2) }}</p>
-                    <small class="summary-sub">Per transaction</small>
+                    <small class="summary-sub">Per completed order</small>
                 </div>
             </div>
         </div>
 
-        <!-- ========== SECONDARY STATS ========== -->
+        <!-- Secondary Stats -->
         <div class="secondary-stats">
             <div class="mini-stat">
                 <div class="mini-stat-icon"><i class="fas fa-users"></i></div>
@@ -322,7 +334,7 @@
             </div>
         </div>
 
-        <!-- ========== SALES CHART ========== -->
+        <!-- Sales Chart -->
         @if(!empty($chartValues))
             <div class="data-card">
                 <div class="card-header">
@@ -337,7 +349,7 @@
             </div>
         @endif
 
-        <!-- ========== DAILY SALES TABLE ========== -->
+        <!-- Daily Sales Table -->
         <div class="data-card">
             <div class="card-header">
                 <div class="header-left">
@@ -404,10 +416,10 @@
             </div>
         </div>
 
-        <!-- ========== ROW: BEST SELLERS + TOP CUSTOMERS ========== -->
+        <!-- Row: Best Sellers + Top Customers -->
         <div class="two-columns">
 
-            <!-- BEST SELLING PRODUCTS -->
+            <!-- Best Selling Products -->
             <div class="data-card">
                 <div class="card-header">
                     <div class="header-left">
@@ -422,6 +434,7 @@
                                 <th class="col-rank">Rank</th>
                                 <th class="col-product">Product</th>
                                 <th class="col-qty">Qty Sold</th>
+                                <th class="col-revenue">Revenue</th>
                                 <th class="col-performance">Performance</th>
                             </tr>
                         </thead>
@@ -432,7 +445,7 @@
                                     $rank = 1;
                                 @endphp
                                 @foreach($best as $row)
-                                    @php $percentage = ($row->total_sold / $maxQty) * 100; @endphp
+                                    @php $percentage = $maxQty > 0 ? ($row->total_sold / $maxQty) * 100 : 0; @endphp
                                     <tr>
                                         <td class="col-rank">
                                             @if($rank == 1)
@@ -447,15 +460,17 @@
                                         </td>
                                         <td class="col-product">
                                             <span class="product-name">{{ $row->name }}</span>
-                                            <small class="revenue-small">₱{{ number_format($row->total_revenue, 2) }}
-                                                revenue</small>
                                         </td>
                                         <td class="col-qty">
                                             <span class="qty-value">{{ number_format($row->total_sold) }}</span>
                                             <span class="qty-unit">units</span>
                                         </td>
+                                        <td class="col-revenue">
+                                            <span class="amount-value">₱{{ number_format($row->total_revenue, 2) }}</span>
+                                        </td>
                                         <td class="col-performance">
-                                            <div class="performance-bar">
+                                            <div class="performance-bar" role="progressbar" aria-valuenow="{{ round($percentage) }}"
+                                                aria-valuemin="0" aria-valuemax="100">
                                                 <div class="performance-fill" style="width: {{ $percentage }}%"></div>
                                             </div>
                                         </td>
@@ -464,7 +479,7 @@
                                 @endforeach
                             @else
                                 <tr class="empty-row">
-                                    <td colspan="4">
+                                    <td colspan="5">
                                         <div class="empty-state small">
                                             <i class="fas fa-chart-simple"></i>
                                             <p>No sales data</p>
@@ -477,7 +492,7 @@
                 </div>
             </div>
 
-            <!-- TOP CUSTOMERS -->
+            <!-- Top Customers -->
             <div class="data-card">
                 <div class="card-header">
                     <div class="header-left">
@@ -537,7 +552,7 @@
             </div>
         </div>
 
-        <!-- ========== WEEKDAY PERFORMANCE ========== -->
+        <!-- Weekday Performance -->
         @if(count($weekdayData) > 0)
             @php $maxWeekday = max(array_column($weekdayData, 'total')); @endphp
             <div class="data-card">
@@ -563,7 +578,7 @@
         @endif
     </div>
 
-    <!-- ========== CHART SCRIPT ========== -->
+    <!-- Chart Script -->
     @if(!empty($chartValues))
         <script>
             document.addEventListener('DOMContentLoaded', function () {
@@ -1079,6 +1094,10 @@
             width: 110px;
         }
 
+        .col-revenue {
+            width: 130px;
+        }
+
         .col-performance {
             width: 140px;
         }
@@ -1120,11 +1139,6 @@
             font-weight: 500;
             color: #2C2B26;
             display: block;
-        }
-
-        .revenue-small {
-            font-size: 0.65rem;
-            color: #9E9D97;
         }
 
         .qty-value {

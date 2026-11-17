@@ -15,7 +15,7 @@
                     <div class="flash-title">Success!</div>
                     <div class="flash-text">{{ session('success') }}</div>
                 </div>
-                <button type="button" class="flash-close" onclick="document.getElementById('flashSuccess').remove()">
+                <button type="button" class="flash-close" data-dismiss="flashSuccess">
                     <i class="fas fa-times"></i>
                 </button>
                 <div class="flash-progress"></div>
@@ -31,7 +31,7 @@
                     <div class="flash-title">Error!</div>
                     <div class="flash-text">{{ session('error') }}</div>
                 </div>
-                <button type="button" class="flash-close" onclick="document.getElementById('flashError').remove()">
+                <button type="button" class="flash-close" data-dismiss="flashError">
                     <i class="fas fa-times"></i>
                 </button>
                 <div class="flash-progress"></div>
@@ -47,21 +47,12 @@
                     <div class="flash-title">Info</div>
                     <div class="flash-text">{{ session('info') }}</div>
                 </div>
-                <button type="button" class="flash-close" onclick="document.getElementById('flashInfo').remove()">
+                <button type="button" class="flash-close" data-dismiss="flashInfo">
                     <i class="fas fa-times"></i>
                 </button>
                 <div class="flash-progress"></div>
             </div>
         @endif
-
-        {{-- ============================================ --}}
-        {{-- BACK BUTTON --}}
-        {{-- ============================================ --}}
-        <div class="page-nav">
-            <a href="{{ route('orders.index') }}" class="btn-back">
-                <i class="fas fa-arrow-left"></i> Back to Orders
-            </a>
-        </div>
 
         {{-- ============================================ --}}
         {{-- ORDER HEADER --}}
@@ -210,7 +201,9 @@
                 </form>
             @endif
 
-            <a href="{{ route('orders.index') }}" class="btn-secondary">
+            {{-- ✅ INAYOS: Dynamic back button base sa role ng user --}}
+            <a href="{{ auth()->user()->isCashier() ? route('cashier.order-history') : route('orders.index') }}"
+                class="btn-secondary">
                 <i class="fas fa-list"></i> Back to Orders
             </a>
         </div>
@@ -220,6 +213,15 @@
     <script>
         // Auto-hide flash messages after 5 seconds
         document.addEventListener('DOMContentLoaded', function () {
+            // Handle manual close
+            document.querySelectorAll('[data-dismiss]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    const target = document.getElementById(this.dataset.dismiss);
+                    if (target) target.remove();
+                });
+            });
+
+            // Auto hide
             const flashMessages = document.querySelectorAll('.flash-message');
             flashMessages.forEach(function (msg) {
                 setTimeout(function () {
@@ -239,7 +241,6 @@
         .order-detail-container {
             max-width: 1000px;
             margin: 0 auto;
-            padding: 2rem 1.5rem;
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
@@ -372,41 +373,6 @@
             to {
                 width: 0%;
             }
-        }
-
-        /* ============ BACK BUTTON ============ */
-        .page-nav {
-            margin-bottom: 0.5rem;
-        }
-
-        .btn-back {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: white;
-            color: #6B6A65;
-            border: 1px solid #E3DCD0;
-            padding: 0.55rem 1.1rem;
-            border-radius: 2rem;
-            text-decoration: none;
-            font-size: 0.8rem;
-            font-weight: 600;
-            transition: all 0.2s ease;
-        }
-
-        .btn-back:hover {
-            background: #F0EADC;
-            border-color: #576238;
-            color: #576238;
-            transform: translateX(-2px);
-        }
-
-        .btn-back i {
-            transition: transform 0.2s ease;
-        }
-
-        .btn-back:hover i {
-            transform: translateX(-3px);
         }
 
         /* ============ HEADER ============ */

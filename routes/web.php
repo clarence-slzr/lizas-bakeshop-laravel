@@ -91,9 +91,14 @@ Route::middleware(['auth'])->group(function () {
         Route::post('clear-cart', [POSController::class, 'clearCart'])->name('clear-cart');
         Route::post('place-order', [POSController::class, 'placeOrder'])->name('place-order');
         Route::get('receipt/{id}', [ReceiptController::class, 'show'])->name('receipt');
+
+        // Shift Routes
         Route::get('shift', [ShiftController::class, 'index'])->name('shift');
         Route::post('shift/start', [ShiftController::class, 'start'])->name('shift.start');
         Route::post('shift/end', [ShiftController::class, 'end'])->name('shift.end');
+        Route::get('shift/live-stats', [ShiftController::class, 'liveStats'])->name('shift.live-stats');
+
+        Route::get('shift/live-stats', [ShiftController::class, 'liveStats'])->name('shift.live-stats');
 
         // REFUND ROUTES
         Route::get('refund', [RefundController::class, 'index'])->name('refund');
@@ -102,7 +107,6 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('order-history', [OrderController::class, 'history'])->name('order-history');
     });
-
     // Logout confirmation page
     Route::get('/logout-confirm', function () {
         return view('auth.confirm-logout');

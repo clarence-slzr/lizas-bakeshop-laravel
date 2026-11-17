@@ -125,6 +125,8 @@
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 2rem;
+            align-items: stretch;
+            /* ✅ Pinipilit pantay-pantay ang taas ng cards */
         }
 
         @media (max-width: 1024px) {
@@ -156,6 +158,8 @@
             display: flex;
             flex-direction: column;
             position: relative;
+            height: 100%;
+            /* ✅ Sagad sa baba para pantay */
         }
 
         .product-card:hover {
@@ -172,6 +176,8 @@
             justify-content: center;
             overflow: hidden;
             position: relative;
+            flex-shrink: 0;
+            /* ✅ Para hindi mag-shrink */
         }
 
         .product-image img {
@@ -237,6 +243,7 @@
             display: flex;
             flex-direction: column;
             flex: 1;
+            /* ✅ Pinipilit mag-stretch para pantay */
         }
 
         .product-badges {
@@ -244,7 +251,8 @@
             flex-wrap: wrap;
             gap: 0.4rem;
             margin-bottom: 0.75rem;
-            min-height: 22px;
+            min-height: 24px;
+            /* ✅ Fixed height kahit walang badge */
         }
 
         .badge {
@@ -286,7 +294,8 @@
             color: #2C2B26;
             margin-bottom: 0.5rem;
             line-height: 1.3;
-            min-height: 2.6rem;
+            /* ✅ Ginawang fixed height (2 lines) para pantay-pantay ang pwesto ng price sa baba */
+            min-height: 2.73rem;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
@@ -312,6 +321,7 @@
             font-weight: 500;
         }
 
+        /* ✅ INAYOS: Pinipilit nasa pinakababa ang price at button */
         .product-price-row {
             display: flex;
             align-items: center;
@@ -320,6 +330,7 @@
             margin-bottom: 1rem;
             flex-wrap: wrap;
             margin-top: auto;
+            /* ✅ Itutulak pababa ang row na ito */
         }
 
         .product-price {
@@ -355,8 +366,10 @@
             font-weight: 600;
             border: 1px solid #576238;
             transition: all 0.2s ease;
-            margin-top: auto;
             align-self: flex-start;
+            /* ✅ Naka-align sa kaliwa */
+            width: 100%;
+            /* ✅ Full width para pantay sa iba */
         }
 
         .btn-view-details:hover {

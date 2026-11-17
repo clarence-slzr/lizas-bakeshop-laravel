@@ -4,16 +4,21 @@
     @php
         use App\Models\Product;
 
+        // ============================================
+        // PAGINATION LOGIC (Para sa page numbers)
+        // ============================================
         $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
         $limit = 10;
         $offset = ($page - 1) * $limit;
 
+        // Kunin yung mga filters galing sa URL (search, category, stock)
         $search = isset($_GET['search']) ? trim($_GET['search']) : '';
         $filterCategory = isset($_GET['category']) ? trim($_GET['category']) : '';
         $filterStock = isset($_GET['stock']) ? trim($_GET['stock']) : '';
 
         $query = Product::query();
 
+        // Logic para sa Search bar (hinahanap sa name, category, at ID)
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'LIKE', "%$search%")
@@ -22,10 +27,12 @@
             });
         }
 
+        // Logic para sa Category Filter
         if ($filterCategory !== '') {
             $query->where('category', $filterCategory);
         }
 
+        // Logic para sa Stock Filter (Low, Out, Good)
         if ($filterStock === 'low') {
             $query->where('stock', '<', 10)->where('stock', '>', 0);
         } elseif ($filterStock === 'out') {
@@ -38,15 +45,19 @@
         $totalPages = ceil($totalCount / $limit);
         $products = $query->orderBy('id', 'asc')->skip($offset)->take($limit)->get();
 
+        // Kunin lahat ng unique categories para sa filter dropdown
         $categories = Product::whereNotNull('category')->where('category', '!=', '')->distinct()->orderBy('category', 'asc')->pluck('category');
 
+        // Stats para sa taas ng page
         $statTotal = Product::count();
         $statActive = Product::where('is_available', 1)->count();
         $statLowStock = Product::where('stock', '<', 10)->where('stock', '>', 0)->count();
         $statOutStock = Product::where('stock', 0)->count();
 
+        // Kunin yung success message galing sa URL or session
         $success = $_GET['success'] ?? session('success') ?? '';
 
+        // Helper function para hindi mawala yung ibang filters kapag nagpalit ng page
         function buildURL($overrides = [])
         {
             $params = array_merge($_GET, $overrides);
@@ -68,7 +79,7 @@
             </div>
         </div>
 
-        <!-- STATS BAR -->
+        <!-- STATS BAR (Total, Active, Low, Out) -->
         <div class="stats-bar">
             <div class="stat-item">
                 <div class="stat-icon stat-total"><i class="fas fa-box"></i></div>
@@ -100,7 +111,7 @@
             </div>
         </div>
 
-        <!-- SUCCESS MESSAGE -->
+        <!-- SUCCESS MESSAGE (Lalabas pagkatapos mag-add/edit/delete) -->
         @if($success)
             <div class="alert alert-success" id="successAlert">
                 <i class="fas fa-check-circle"></i>
@@ -123,7 +134,7 @@
             </div>
         @endif
 
-        <!-- PRODUCTS CARD -->
+        <!-- PRODUCTS TABLE CARD -->
         <div class="data-card">
             <div class="card-header">
                 <div class="header-left">
@@ -134,6 +145,7 @@
                     </span>
                 </div>
 
+                <!-- SEARCH FORM -->
                 <form method="GET" action="{{ route('admin.products.index') }}" class="search-form" id="searchForm">
                     @if($filterCategory)<input type="hidden" name="category" value="{{ $filterCategory }}">@endif
                     @if($filterStock)<input type="hidden" name="stock" value="{{ $filterStock }}">@endif
@@ -152,7 +164,7 @@
                 </form>
             </div>
 
-            <!-- FILTER BAR -->
+            <!-- FILTER BAR (Category & Stock Dropdowns) -->
             <div class="filter-bar">
                 <div class="filter-group">
                     <label><i class="fas fa-filter"></i> Filters:</label>
@@ -181,7 +193,7 @@
                 </div>
             </div>
 
-            <!-- BULK ACTIONS FORM -->
+            <!-- BULK ACTIONS FORM (Para sa checkbox actions) -->
             <form method="POST" action="" id="bulkForm">
                 @csrf
                 <div class="bulk-actions" id="bulkActions" style="display: none;">
@@ -199,6 +211,7 @@
                     <button type="button" class="btn-cancel" onclick="clearSelection()">Cancel</button>
                 </div>
 
+                <!-- MAIN DATA TABLE -->
                 <div class="table-wrapper">
                     <table class="data-table">
                         <thead>
@@ -234,6 +247,7 @@
                                             <span class="category-badge">{{ $p->category }}</span>
                                         </td>
                                         <td class="col-stock">
+                                            {{-- Iba-ibang kulay ng stock badge base sa dami --}}
                                             @if($p->stock <= 0)
                                                 <span class="stock-badge stock-out">Out of Stock</span>
                                             @elseif($p->stock < 10)
@@ -241,6 +255,7 @@
                                             @else
                                                 <span class="stock-badge stock-good">{{ $p->stock }} units</span>
                                             @endif
+                                            {{-- Quick edit button para sa stock --}}
                                             <button type="button" class="quick-stock-btn"
                                                 onclick="openStockModal({{ $p->id }}, '{{ addslashes($p->name) }}', {{ $p->stock }})"
                                                 title="Quick update stock">
@@ -248,12 +263,14 @@
                                             </button>
                                         </td>
                                         <td class="col-status">
+                                            {{-- Active/Inactive Toggle Link --}}
                                             <a href="{{ route('admin.products.toggle', $p->id) }}"
                                                 class="status-toggle {{ $p->is_available ? 'status-active' : 'status-inactive' }}">
                                                 {{ $p->is_available ? 'Active' : 'Inactive' }}
                                             </a>
                                         </td>
                                         <td class="col-actions">
+                                            {{-- Action Dropdown (3 dots menu) --}}
                                             <div class="action-dropdown">
                                                 <button type="button" class="action-trigger"
                                                     onclick="toggleActionMenu(event, {{ $p->id }})" title="Actions">
@@ -332,7 +349,7 @@
         </div>
     </div>
 
-    <!-- STOCK UPDATE MODAL -->
+    <!-- STOCK UPDATE MODAL (Popup para sa quick edit) -->
     <div class="modal-overlay" id="stockModal" onclick="if(event.target===this) closeStockModal()">
         <div class="modal-box">
             <div class="modal-header">
@@ -356,11 +373,16 @@
     </div>
 
     <script>
+        // ============================================
+        // KEYBOARD SHORTCUTS
+        // ============================================
         document.addEventListener('keydown', function (e) {
+            // Pindutin ang "/" para mag-focus sa search bar
             if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
                 e.preventDefault();
                 document.getElementById('searchInput').focus();
             }
+            // Pindutin ang "Escape" para mag-close ng modal at dropdowns
             if (e.key === 'Escape') {
                 if (document.activeElement.id === 'searchInput') document.activeElement.blur();
                 closeStockModal();
@@ -368,6 +390,9 @@
             }
         });
 
+        // ============================================
+        // CHECKBOX LOGIC (Bulk Actions)
+        // ============================================
         function toggleSelectAll(checkbox) {
             document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = checkbox.checked);
             updateBulkActions();
@@ -381,6 +406,7 @@
             const selectAll = document.getElementById('selectAll');
 
             if (countSpan) countSpan.textContent = checked;
+            // Ipakita yung bulk actions bar kung may naka-check
             if (bulkBar) bulkBar.style.display = checked > 0 ? 'flex' : 'none';
             if (selectAll) selectAll.checked = checked > 0 && checked === total;
         }
@@ -400,6 +426,9 @@
             return confirm(`Apply "${action}" to ${count} product(s)?`);
         }
 
+        // ============================================
+        // STOCK MODAL LOGIC
+        // ============================================
         function openStockModal(id, name, currentStock) {
             document.getElementById('stockId').value = id;
             document.getElementById('stockProductName').textContent = name;
@@ -412,9 +441,13 @@
             document.getElementById('stockModal').classList.remove('active');
         }
 
+        // ============================================
+        // ACTION DROPDOWN LOGIC (3 dots menu)
+        // ============================================
         function toggleActionMenu(event, productId) {
             event.stopPropagation();
 
+            // Isara yung ibang menu kung meron man
             document.querySelectorAll('.action-menu').forEach(menu => {
                 if (menu.id !== 'action-menu-' + productId) {
                     menu.classList.remove('open');
@@ -427,6 +460,7 @@
             }
         }
 
+        // Isara yung dropdown kapag clinick sa labas
         document.addEventListener('click', function (e) {
             if (!e.target.closest('.action-dropdown')) {
                 document.querySelectorAll('.action-menu').forEach(menu => {
@@ -435,7 +469,9 @@
             }
         });
 
+    
         // AUTO HIDE SUCCESS ALERT
+     
         document.addEventListener('DOMContentLoaded', function () {
             const successAlert = document.getElementById('successAlert');
             if (successAlert) {
@@ -449,12 +485,14 @@
     </script>
 
     <style>
+        /* ============ LAYOUT ============ */
         .products-container {
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
         }
 
+        /* Page Header (Title & Add Button) */
         .page-header {
             display: flex;
             justify-content: space-between;
@@ -476,12 +514,7 @@
             color: #9E9D97;
         }
 
-        .header-actions {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
+        /* Default Buttons */
         .btn-primary,
         .btn-secondary {
             display: inline-flex;
@@ -507,6 +540,7 @@
             transform: translateY(-1px);
         }
 
+        /* Stats Bar (Total, Active, Low, Out) */
         .stats-bar {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -566,6 +600,7 @@
             letter-spacing: 0.5px;
         }
 
+        /* Alerts (Success message) */
         .alert {
             display: flex;
             align-items: center;
@@ -601,6 +636,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* Data Card (Table wrapper) */
         .data-card {
             background: white;
             border: 1px solid #E3DCD0;
@@ -641,6 +677,7 @@
             font-weight: 500;
         }
 
+        /* Search Bar */
         .search-form { margin: 0; }
 
         .search-wrapper {
@@ -693,6 +730,7 @@
 
         .search-btn:hover { background: #3E4A28; }
 
+        /* Filter Dropdowns */
         .filter-bar {
             padding: 0.75rem 1.25rem;
             background: #FDF8F0;
@@ -741,6 +779,7 @@
 
         .btn-clear-filters:hover { background: #C5705A; color: white; }
 
+        /* Bulk Actions Bar (Lalabas pag may naka-check) */
         .bulk-actions {
             background: #E8F0E3;
             border-bottom: 1px solid #576238;
@@ -789,6 +828,7 @@
             cursor: pointer;
         }
 
+        /* Main Data Table */
         .table-wrapper { overflow-x: auto; }
 
         .data-table {
@@ -826,6 +866,7 @@
 
         .data-table tbody tr:last-child td { border-bottom: none; }
 
+        /* Table Column Sizes */
         .col-checkbox { width: 40px; text-align: center; }
 
         .col-checkbox input[type="checkbox"] {
@@ -842,6 +883,7 @@
         .col-status { width: 100px; }
         .col-actions { width: 70px; text-align: center; }
 
+        /* Table Content Styling */
         .product-name { font-weight: 500; color: #2C2B26; }
         .price-value { font-weight: 600; color: #576238; }
 
@@ -867,6 +909,7 @@
         .stock-low { background: #FEF5E8; color: #D4A054; }
         .stock-out { background: #FEF0ED; color: #C5705A; }
 
+        /* Quick Edit (Pen Icon) */
         .quick-stock-btn {
             background: transparent;
             border: 1px solid #E3DCD0;
@@ -886,6 +929,7 @@
             border-color: #576238;
         }
 
+        /* Active/Inactive Toggle */
         .status-toggle {
             display: inline-block;
             padding: 0.25rem 0.625rem;
@@ -902,6 +946,7 @@
         .status-inactive { background: #F0EADC; color: #9E9D97; }
         .status-inactive:hover { background: #9E9D97; color: white; }
 
+        /* 3-Dots Dropdown Menu */
         .action-dropdown {
             position: relative;
             display: inline-block;
@@ -986,6 +1031,7 @@
         .action-menu-danger:hover { background: #FEF0ED; }
         .action-menu-danger:hover i { color: #A85444; }
 
+        /* Pagination Controls */
         .pagination {
             display: flex;
             justify-content: space-between;
@@ -1019,6 +1065,7 @@
         .page-btn:hover { background: #F0EADC; border-color: #576238; }
         .page-btn.active { background: #576238; color: white; border-color: #576238; font-weight: 600; }
 
+        /* Empty State (Kapag walang products) */
         .empty-row td { padding: 0 !important; }
 
         .empty-state {
@@ -1051,6 +1098,7 @@
             border-radius: 0.5rem;
         }
 
+        /* Quick Edit Modal */
         .modal-overlay {
             display: none;
             position: fixed;

@@ -15,7 +15,13 @@
 
         $groupedProducts = [];
         foreach ($products as $product) {
-            $category = $product->category ?? 'Others';
+            $rawCategory = trim($product->category ?? 'Others');
+            $category = ucwords(strtolower($rawCategory));
+
+            if (in_array(strtolower($category), ['bread', 'breads'])) {
+                $category = 'Bread';
+            }
+
             if (!isset($groupedProducts[$category])) {
                 $groupedProducts[$category] = [];
             }
@@ -54,9 +60,16 @@
 
                 <div class="products-grid" id="productsGrid">
                     @foreach($products as $p)
+                        @php
+                            $rawCat = trim($p->category ?? 'Others');
+                            $catName = ucwords(strtolower($rawCat));
+                            if (in_array(strtolower($catName), ['bread', 'breads'])) {
+                                $catName = 'Bread';
+                            }
+                        @endphp
                         <div class="product-card" data-id="{{ $p->id }}" data-name="{{ $p->name }}" data-price="{{ $p->price }}"
-                            data-stock="{{ $p->stock }}" data-category="{{ $p->category ?? 'Others' }}"
-                            onclick="addToCart(this)" oncontextmenu="addMultipleToCart(event, this, 5)">
+                            data-stock="{{ $p->stock }}" data-category="{{ $catName }}" onclick="addToCart(this)"
+                            oncontextmenu="addMultipleToCart(event, this, 5)">
                             <div class="product-name">{{ $p->name }}</div>
                             <div class="product-price">₱{{ number_format($p->price, 2) }}</div>
                             <div class="product-stock {{ $p->stock < 10 ? 'stock-low' : '' }}">
@@ -78,6 +91,7 @@
 
             <!-- ========== RIGHT: CART PANEL ========== -->
             <div class="cart-panel">
+                <!-- Header (Fixed) -->
                 <div class="cart-header">
                     <div class="cart-header-left">
                         <i class="fas fa-shopping-cart"></i>
@@ -89,6 +103,7 @@
                     </button>
                 </div>
 
+                <!-- Cart Items (Scrollable area) -->
                 <div class="cart-items" id="cartItems">
                     <div class="empty-cart-state" id="emptyCart">
                         <div class="empty-cart-icon">
@@ -113,6 +128,7 @@
                     </div>
                 </div>
 
+                <!-- Summary (Fixed) -->
                 <div class="cart-summary">
                     <div class="summary-row">
                         <span class="summary-label">Subtotal:</span>
@@ -128,6 +144,7 @@
                     </div>
                 </div>
 
+                <!-- Form Fields & Actions (Scrollable if needed, but stays below cart) -->
                 <div class="cart-actions">
                     <!-- CUSTOMER INFO -->
                     <div class="form-section">
@@ -135,10 +152,12 @@
                             <i class="fas fa-user"></i>
                             <span>Customer Info</span>
                         </div>
-                        <input type="text" id="customer_name" placeholder="Full Name *" class="form-input"
-                            autocomplete="off">
-                        <input type="tel" id="contact_number" placeholder="Contact Number" class="form-input"
-                            autocomplete="off">
+                        <div class="input-group">
+                            <input type="text" id="customer_name" placeholder="Full Name *" class="form-input"
+                                autocomplete="off">
+                            <input type="tel" id="contact_number" placeholder="Contact Number" class="form-input"
+                                autocomplete="off">
+                        </div>
                     </div>
 
                     <!-- ORDER TYPE -->
@@ -206,8 +225,10 @@
                             <strong class="change-amount" id="change_due">₱0.00</strong>
                         </div>
                     </div>
+                </div>
 
-                    <!-- CHECKOUT -->
+                <!-- Checkout Button (Fixed at the very bottom) -->
+                <div class="checkout-footer">
                     <button id="checkoutBtn" class="checkout-btn">
                         <i class="fas fa-check-circle"></i> Checkout (Enter)
                     </button>
@@ -221,7 +242,7 @@
 
     <script>
         // ============================================
-        // STATE
+        // GLOBAL STATE
         // ============================================
         let cart = [];
         let currentSubtotal = 0;
@@ -233,7 +254,7 @@
         const PLACE_ORDER_URL = '{{ route("cashier.place-order") }}';
 
         // ============================================
-        // TOAST
+        // TOAST HELPER
         // ============================================
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
@@ -257,7 +278,7 @@
         }
 
         // ============================================
-        // ADD TO CART
+        // ADD TO CART LOGIC
         // ============================================
         function addToCart(card, quantity = 1) {
             const id = card.dataset.id;
@@ -295,7 +316,7 @@
         }
 
         // ============================================
-        // SEARCH & FILTER
+        // FILTER & SEARCH
         // ============================================
         const searchInput = document.getElementById('productSearch');
         const categoryBtns = document.querySelectorAll('.cat-btn');
@@ -324,7 +345,9 @@
             noResults.style.display = visibleCount === 0 ? 'block' : 'none';
         }
 
-        searchInput.addEventListener('input', filterProducts);
+        if (searchInput) {
+            searchInput.addEventListener('input', filterProducts);
+        }
 
         categoryBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -371,7 +394,7 @@
         });
 
         // ============================================
-        // DISCOUNT
+        // DISCOUNT LOGIC
         // ============================================
         document.getElementById('seniorBtn')?.addEventListener('click', () => {
             const discountType = document.getElementById('discount_type');
@@ -401,6 +424,9 @@
 
         discountValue.addEventListener('input', calculateDiscount);
 
+        // ============================================
+        // CALCULATIONS
+        // ============================================
         function calculateDiscount() {
             const subtotal = currentSubtotal;
             const type = discountType.value;
@@ -423,12 +449,30 @@
             } else {
                 document.getElementById('discount-row').style.display = 'none';
             }
+
             document.getElementById('cart-total').textContent = `₱${currentTotal.toFixed(2)}`;
             calculateChange();
         }
 
+        function calculateChange() {
+            const tenderedInput = document.getElementById('amount_tendered').value;
+            const tendered = parseFloat(tenderedInput) || 0;
+            const change = tendered - currentTotal;
+            const changeEl = document.getElementById('change_due');
+
+            changeEl.textContent = `₱${change >= 0 ? change.toFixed(2) : '0.00'}`;
+
+            if (change >= 0 && tendered > 0 && currentTotal > 0) {
+                changeEl.classList.add('positive');
+            } else {
+                changeEl.classList.remove('positive');
+            }
+        }
+
+        document.getElementById('amount_tendered').addEventListener('input', calculateChange);
+
         // ============================================
-        // UPDATE CART
+        // UPDATE CART UI
         // ============================================
         function updateCart() {
             const cartBody = document.getElementById('cart-body');
@@ -444,8 +488,10 @@
                 document.getElementById('cart-total').textContent = '₱0.00';
                 document.getElementById('discount-row').style.display = 'none';
                 document.getElementById('cart-count').textContent = '0 items';
+
                 currentSubtotal = 0;
                 currentTotal = 0;
+                currentDiscount = 0;
                 calculateChange();
                 return;
             }
@@ -490,6 +536,7 @@
 
             document.getElementById('cart-subtotal').textContent = `₱${currentSubtotal.toFixed(2)}`;
             document.getElementById('cart-count').textContent = `${cart.length} item${cart.length !== 1 ? 's' : ''}`;
+
             calculateDiscount();
         }
 
@@ -519,25 +566,7 @@
         }
 
         // ============================================
-        // CHANGE CALC
-        // ============================================
-        function calculateChange() {
-            const tendered = parseFloat(document.getElementById('amount_tendered').value) || 0;
-            const change = tendered - currentTotal;
-            const changeEl = document.getElementById('change_due');
-            changeEl.textContent = `₱${change >= 0 ? change.toFixed(2) : '0.00'}`;
-
-            if (change >= 0 && tendered > 0 && currentTotal > 0) {
-                changeEl.classList.add('positive');
-            } else {
-                changeEl.classList.remove('positive');
-            }
-        }
-
-        document.getElementById('amount_tendered').addEventListener('input', calculateChange);
-
-        // ============================================
-        // CHECKOUT
+        // CHECKOUT LOGIC
         // ============================================
         document.getElementById('checkoutBtn').addEventListener('click', async () => {
             const customer = document.getElementById('customer_name').value.trim();
@@ -657,7 +686,7 @@
         });
 
         // ============================================
-        // AUTO-FOCUS (only on desktop)
+        // AUTO-FOCUS
         // ============================================
         document.addEventListener('DOMContentLoaded', () => {
             if (window.innerWidth > 900) {
@@ -671,9 +700,6 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
 
-        /* ==================================================
-                   FIX: OVERRIDE ANG MAIN CONTENT PADDING
-                   ================================================== */
         .pos-page-wrapper {
             background: #F0EADC;
             margin: -1.5rem;
@@ -683,12 +709,9 @@
             overflow-x: hidden;
         }
 
-        /* ==================================================
-                   BASE LAYOUT
-                   ================================================== */
         .pos-container {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 420px;
+            grid-template-columns: minmax(0, 1fr) 400px;
             gap: 1.25rem;
             height: calc(100vh - 120px);
             min-height: 600px;
@@ -696,9 +719,7 @@
             align-items: stretch;
         }
 
-        /* ==================================================
-                   PRODUCTS PANEL
-                   ================================================== */
+        /* ============ LEFT PANEL: PRODUCTS ============ */
         .products-panel {
             background: white;
             border: 1px solid #E3DCD0;
@@ -807,9 +828,6 @@
             pointer-events: none;
         }
 
-        /* ==================================================
-                   CATEGORY TABS
-                   ================================================== */
         .category-tabs {
             display: flex;
             gap: 0.5rem;
@@ -821,7 +839,6 @@
             white-space: nowrap;
             flex-shrink: 0;
             scrollbar-width: none;
-            -ms-overflow-style: none;
             -webkit-overflow-scrolling: touch;
         }
 
@@ -858,9 +875,6 @@
             border-color: #576238;
         }
 
-        /* ==================================================
-                   PRODUCTS GRID
-                   ================================================== */
         .products-grid {
             flex: 1;
             display: grid;
@@ -889,9 +903,6 @@
             background: #C4C3BC;
         }
 
-        /* ==================================================
-                   PRODUCT CARD
-                   ================================================== */
         .product-card {
             background: #FDF8F0;
             border: 1px solid #E3DCD0;
@@ -956,14 +967,12 @@
             overflow: hidden;
         }
 
-        /* ============ PRODUCT PRICE — INTER FONT NA PARA TUGMA SA DASHBOARD ============ */
         .product-price {
             font-weight: 700;
             font-size: 1rem;
             color: #576238;
             margin-bottom: 0.3rem;
             font-family: 'Inter', sans-serif;
-            /* ← BINAGO: dating 'Playfair Display' */
         }
 
         .product-stock {
@@ -981,9 +990,6 @@
             font-weight: 600;
         }
 
-        /* ==================================================
-                   NO RESULTS
-                   ================================================== */
         .no-results {
             position: absolute;
             top: 50%;
@@ -1011,9 +1017,7 @@
             font-size: 0.75rem;
         }
 
-        /* ==================================================
-                   CART PANEL
-                   ================================================== */
+        /* ============ RIGHT PANEL: CART ============ */
         .cart-panel {
             background: white;
             border: 1px solid #E3DCD0;
@@ -1078,13 +1082,11 @@
             background: #FEF0ED;
         }
 
-        /* ==================================================
-                   CART ITEMS
-                   ================================================== */
+        /* DITO YUNG INAYOS NATIN PARA SCROLLABLE LANG YUNG ITEMS AT DI MAWALA YUNG FORMS */
         .cart-items {
-            flex: 1 1 auto;
-            overflow-y: auto;
+            flex: 1 1 150px;
             min-height: 100px;
+            overflow-y: auto;
             background: white;
         }
 
@@ -1101,9 +1103,6 @@
             border-radius: 3px;
         }
 
-        /* ==================================================
-                   EMPTY CART
-                   ================================================== */
         .empty-cart-state {
             text-align: center;
             padding: 3rem 1.5rem;
@@ -1137,9 +1136,6 @@
             font-size: 0.75rem;
         }
 
-        /* ==================================================
-                   CART TABLE
-                   ================================================== */
         .cart-table {
             width: 100%;
             border-collapse: collapse;
@@ -1249,9 +1245,6 @@
             background: #FEF0ED;
         }
 
-        /* ==================================================
-                   CART SUMMARY
-                   ================================================== */
         .cart-summary {
             padding: 0.75rem 1rem;
             background: #FDF8F0;
@@ -1295,26 +1288,22 @@
             font-size: 0.9rem;
         }
 
-        /* ============ TOTAL VALUE — INTER FONT NA PARA TUGMA SA DASHBOARD ============ */
         .total-value {
             font-size: 1.15rem;
             font-weight: 700;
             color: #576238;
             font-family: 'Inter', sans-serif;
-            /* ← BINAGO: dating 'Playfair Display' */
         }
 
-        /* ==================================================
-                   CART ACTIONS
-                   ================================================== */
+        /* DITO YUNG FORM FIELDS. NAKA-FLEX 1 PARA HATAWIN YUNG NATITIRANG SPACE */
         .cart-actions {
-            padding: 0.875rem 1rem 1rem;
-            border-top: 1px solid #E3DCD0;
+            padding: 0.875rem 1rem;
             background: white;
-            flex-shrink: 0;
-            flex-grow: 1;
+            flex: 1 1 auto;
             overflow-y: auto;
-            max-height: 50vh;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
         }
 
         .cart-actions::-webkit-scrollbar {
@@ -1327,11 +1316,9 @@
         }
 
         .form-section {
-            margin-bottom: 0.875rem;
-        }
-
-        .form-section:last-child {
-            margin-bottom: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
         }
 
         .form-section-header {
@@ -1343,7 +1330,7 @@
             color: #9E9D97;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.1rem;
         }
 
         .form-section-header i {
@@ -1353,6 +1340,12 @@
 
         .form-section-header .senior-btn {
             margin-left: auto;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
         }
 
         .form-input {
@@ -1365,12 +1358,7 @@
             color: #2C2B26;
             background: white;
             transition: all 0.2s ease;
-            margin-bottom: 0.4rem;
             box-sizing: border-box;
-        }
-
-        .form-input:last-child {
-            margin-bottom: 0;
         }
 
         .form-input:focus {
@@ -1386,7 +1374,6 @@
         .order-type-buttons {
             display: flex;
             gap: 0.5rem;
-            margin-bottom: 0.4rem;
         }
 
         .order-type-btn {
@@ -1418,15 +1405,16 @@
         }
 
         .delivery-field {
-            margin-top: 0.5rem;
+            margin-top: 0.4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
         }
 
         .delivery-field label {
-            display: block;
             font-size: 0.7rem;
             font-weight: 600;
             color: #6B6A65;
-            margin-bottom: 0.3rem;
         }
 
         .required {
@@ -1490,11 +1478,10 @@
 
         .payment-input {
             flex: 1;
-            margin-bottom: 0;
         }
 
         .change-row {
-            margin-top: 0.5rem;
+            margin-top: 0.4rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -1509,17 +1496,23 @@
             font-weight: 500;
         }
 
-        /* ============ CHANGE AMOUNT — INTER FONT NA PARA TUGMA SA DASHBOARD ============ */
         .change-amount {
             font-size: 1.05rem;
             color: #576238;
             font-weight: 700;
             font-family: 'Inter', sans-serif;
-            /* ← BINAGO: dating 'Playfair Display' */
         }
 
         .change-amount.positive {
             color: #4ADE80;
+        }
+
+        .checkout-footer {
+            padding: 1rem;
+            background: white;
+            border-top: 1px solid #E3DCD0;
+            flex-shrink: 0;
+            z-index: 10;
         }
 
         .checkout-btn {
@@ -1532,7 +1525,6 @@
             font-size: 0.9rem;
             font-weight: 600;
             cursor: pointer;
-            margin-top: 0.75rem;
             transition: all 0.2s ease;
             display: flex;
             align-items: center;
@@ -1553,9 +1545,6 @@
             transform: none;
         }
 
-        /* ==================================================
-                   TOAST
-                   ================================================== */
         .toast-container {
             position: fixed;
             top: 1.5rem;
@@ -1616,9 +1605,7 @@
             color: #D4A054;
         }
 
-        /* ==================================================
-                   RESPONSIVE
-                   ================================================== */
+        /* Responsive adjustments */
         @media (max-width: 1200px) {
             .pos-container {
                 grid-template-columns: minmax(0, 1fr) 380px;
@@ -1642,7 +1629,6 @@
 
         @media (max-width: 900px) {
             .pos-page-wrapper {
-                margin: -1.5rem;
                 padding: 1rem;
             }
 
@@ -1657,12 +1643,6 @@
             .products-panel {
                 max-height: 55vh;
                 min-height: 400px;
-            }
-
-            .products-grid {
-                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-                gap: 0.6rem;
-                padding: 0.875rem;
             }
 
             .cart-panel {
@@ -1684,30 +1664,15 @@
                 gap: 0.6rem;
             }
 
-            .header-title h3 {
-                font-size: 0.88rem;
-            }
-
             .search-box {
                 max-width: 100%;
                 flex: 1 0 100%;
                 order: 3;
             }
-
-            .category-tabs {
-                padding: 0.6rem 0.875rem;
-                gap: 0.4rem;
-            }
-
-            .cat-btn {
-                padding: 0.35rem 0.8rem;
-                font-size: 0.72rem;
-            }
         }
 
         @media (max-width: 640px) {
             .pos-page-wrapper {
-                margin: -1.5rem;
                 padding: 0.75rem;
             }
 
@@ -1718,38 +1683,6 @@
             .products-panel {
                 max-height: 50vh;
                 min-height: 320px;
-                border-radius: 0.6rem;
-            }
-
-            .panel-header {
-                padding: 0.65rem 0.75rem;
-                gap: 0.5rem;
-            }
-
-            .header-title {
-                gap: 0.4rem;
-            }
-
-            .header-title i {
-                font-size: 0.95rem;
-            }
-
-            .header-title h3 {
-                font-size: 0.82rem;
-            }
-
-            .header-count {
-                font-size: 0.62rem;
-                padding: 0.12rem 0.45rem;
-            }
-
-            .product-search {
-                font-size: 0.75rem;
-                padding: 0.5rem 2.25rem 0.5rem 2rem;
-            }
-
-            .search-hint {
-                display: none;
             }
 
             .products-grid {
@@ -1761,18 +1694,14 @@
             .product-card {
                 padding: 0.65rem 0.5rem;
                 min-height: 90px;
-                border-radius: 0.5rem;
             }
 
             .product-name {
                 font-size: 0.72rem;
-                line-height: 1.3;
-                margin-bottom: 0.3rem;
             }
 
             .product-price {
                 font-size: 0.85rem;
-                margin-bottom: 0.2rem;
             }
 
             .product-stock {
@@ -1783,118 +1712,15 @@
                 padding: 0.75rem 0.875rem;
             }
 
-            .cart-header-left h3 {
-                font-size: 0.82rem;
-            }
-
-            .cart-header-left i {
-                font-size: 0.9rem;
-            }
-
-            .cart-badge {
-                font-size: 0.6rem;
-            }
-
-            .empty-cart-state {
-                padding: 2rem 1rem;
-            }
-
-            .empty-cart-icon {
-                width: 60px;
-                height: 60px;
-            }
-
-            .empty-cart-icon i {
-                font-size: 1.4rem;
-            }
-
             .cart-table th,
             .cart-table td {
                 padding: 0.5rem 0.4rem;
                 font-size: 0.72rem;
             }
 
-            .cart-table th {
-                font-size: 0.58rem;
-            }
-
-            .col-price {
-                width: 55px;
-                font-size: 0.7rem;
-            }
-
-            .col-qty {
-                width: 80px;
-            }
-
-            .col-subtotal {
-                width: 68px;
-                font-size: 0.72rem;
-            }
-
-            .col-action {
-                width: 26px;
-            }
-
-            .qty-btn {
-                width: 20px;
-                height: 20px;
-                font-size: 0.75rem;
-            }
-
-            .qty-value {
-                min-width: 18px;
-                font-size: 0.72rem;
-            }
-
-            .cart-summary {
-                padding: 0.6rem 0.875rem;
-            }
-
-            .summary-row {
-                font-size: 0.75rem;
-            }
-
-            .total-value {
-                font-size: 1.05rem;
-            }
-
-            .cart-actions {
-                padding: 0.75rem 0.875rem 1rem;
-            }
-
-            .form-section {
-                margin-bottom: 0.7rem;
-            }
-
-            .form-section-header {
-                font-size: 0.62rem;
-                margin-bottom: 0.4rem;
-            }
-
-            .form-input {
-                font-size: 0.78rem;
-                padding: 0.5rem 0.65rem;
-                margin-bottom: 0.35rem;
-            }
-
-            .order-type-btn {
-                font-size: 0.72rem;
-                padding: 0.5rem;
-            }
-
-            .payment-label {
-                font-size: 0.72rem;
-            }
-
-            .change-amount {
-                font-size: 0.95rem;
-            }
-
             .checkout-btn {
                 font-size: 0.82rem;
                 padding: 0.75rem;
-                margin-top: 0.6rem;
             }
 
             .toast-container {
@@ -1907,71 +1733,6 @@
                 min-width: auto;
                 font-size: 0.75rem;
                 padding: 0.65rem 0.85rem;
-            }
-        }
-
-        @media (max-width: 400px) {
-            .products-grid {
-                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-                gap: 0.4rem;
-                padding: 0.5rem;
-            }
-
-            .product-card {
-                padding: 0.55rem 0.4rem;
-                min-height: 80px;
-            }
-
-            .product-name {
-                font-size: 0.68rem;
-            }
-
-            .product-price {
-                font-size: 0.78rem;
-            }
-
-            .product-stock {
-                font-size: 0.55rem;
-            }
-
-            .cat-btn {
-                padding: 0.3rem 0.7rem;
-                font-size: 0.68rem;
-            }
-
-            .cart-table th,
-            .cart-table td {
-                padding: 0.4rem 0.3rem;
-                font-size: 0.68rem;
-            }
-
-            .cart-table th {
-                font-size: 0.55rem;
-            }
-
-            .col-price {
-                width: 50px;
-                font-size: 0.65rem;
-            }
-
-            .col-qty {
-                width: 72px;
-            }
-
-            .col-subtotal {
-                width: 60px;
-                font-size: 0.68rem;
-            }
-
-            .qty-btn {
-                width: 18px;
-                height: 18px;
-                font-size: 0.7rem;
-            }
-
-            .qty-value {
-                min-width: 16px;
-                font-size: 0.68rem;
             }
         }
     </style>

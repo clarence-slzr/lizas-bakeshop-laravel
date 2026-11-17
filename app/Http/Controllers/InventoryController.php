@@ -45,7 +45,9 @@ class InventoryController extends Controller
         } elseif ($filterStock === 'good') {
             $query->where('stock', '>=', 10);
         } elseif ($filterStock === 'critical') {
-            $query->where('stock', '<', 5)->where('stock', '>', 0);
+            $query->where('stock', '<', 5); // Kasama na ang 0 (out of stock)
+        } elseif ($filterStock === 'low_or_out') {
+            $query->where('stock', '<', 10); // Kasama ang 0 to 9 (low at out)
         }
 
         // Sorting

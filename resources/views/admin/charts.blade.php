@@ -3,8 +3,6 @@
 @section('content')
     @php
         use App\Models\Order;
-        use App\Models\Product;
-        use App\Models\OrderItem;
         use Illuminate\Support\Facades\DB;
 
         // ============================================
@@ -24,15 +22,13 @@
 
         $months = [];
         $sales = [];
-        $orderCounts = [];
         foreach (array_reverse($monthly) as $row) {
             $months[] = date('M Y', strtotime($row['month'] . '-01'));
             $sales[] = (float) $row['total'];
-            $orderCounts[] = (int) $row['order_count'];
         }
 
         // ============================================
-        // TOP PRODUCTS (DB::table → stdClass object)
+        // TOP PRODUCTS
         // ============================================
         $topProducts = DB::table('order_items')
             ->join('products', 'order_items.product_id', '=', 'products.id')
@@ -61,12 +57,15 @@
         $pendingOrders = Order::where('status', 'pending')->count();
 
         // ============================================
-        // SALES BY CATEGORY (DB::table → stdClass object)
+        // SALES BY CATEGORY
         // ============================================
         $categoryData = DB::table('order_items')
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->select('products.category as category', DB::raw('COALESCE(SUM(order_items.quantity * order_items.price), 0) as revenue'))
+            ->select(
+                'products.category as category',
+                DB::raw('COALESCE(SUM(order_items.quantity * order_items.price), 0) as revenue')
+            )
             ->where('orders.status', 'completed')
             ->whereNotNull('products.category')
             ->groupBy('products.category')
@@ -80,12 +79,6 @@
             $catLabels[] = $c->category;
             $catValues[] = (float) $c->revenue;
         }
-
-        // ============================================
-        // PAYMENT METHOD BREAKDOWN
-        // ============================================
-        $paymentLabels = ['Cash'];
-        $paymentValues = [Order::where('status', 'completed')->count()];
 
         // ============================================
         // HOURLY SALES PATTERN
@@ -104,11 +97,9 @@
 
         $hourLabels = [];
         $hourValues = [];
-        $hourCounts = [];
         foreach ($hourlyData as $h) {
             $hourLabels[] = date('g A', strtotime($h['hour'] . ':00'));
             $hourValues[] = (float) $h['total'];
-            $hourCounts[] = (int) $h['order_count'];
         }
 
         // ============================================
@@ -122,7 +113,7 @@
                 'date' => $date->format('M d'),
                 'value' => (float) Order::whereDate('order_date', $date->toDateString())
                     ->where('status', 'completed')
-                    ->sum('total_amount')
+                    ->sum('total_amount'),
             ];
         }
 
@@ -135,17 +126,20 @@
             ->get()
             ->toArray();
 
-        $statusLabels = [];
-        $statusValues = [];
-        $statusColors = [
+        // Associative map para hindi fragile ang color order
+        $statusColorMap = [
             'pending' => '#D4A054',
             'completed' => '#576238',
             'cancelled' => '#C5705A',
-            'refunded' => '#9E9D97'
         ];
+
+        $statusLabels = [];
+        $statusValues = [];
+        $statusColors = [];
         foreach ($statusData as $s) {
             $statusLabels[] = ucfirst($s['status']);
             $statusValues[] = (int) $s['count'];
+            $statusColors[] = $statusColorMap[$s['status']] ?? '#9E9D97';
         }
 
         // ============================================
@@ -173,8 +167,7 @@
         // ============================================
         // SAFE MAX VALUES
         // ============================================
-        $max_sales = !empty($sales) ? max($sales) : 1;
-        $max_sold = !empty($productSales) ? max($productSales) : 1;
+        $maxSold = !empty($productSales) ? max($productSales) : 1;
         $grandTotal = !empty($sales) ? array_sum($sales) : 0;
     @endphp
 
@@ -182,6 +175,14 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <div class="analytics-container">
+
+        <!-- ============ PAGE HEADER ============ -->
+        <div class="page-header">
+            <div class="page-header-left">
+                <h1>Analytics</h1>
+                <p class="page-description">Track your sales performance and customer insights</p>
+            </div>
+        </div>
 
         <!-- ============ SUMMARY CARDS ============ -->
         <div class="summary-cards">
@@ -245,7 +246,7 @@
                 </div>
                 <div class="chart-body">
                     @if(!empty($statusValues) && array_sum($statusValues) > 0)
-                        <div class="chart-canvas-wrapper donut-wrapper">
+                        <div class="chart-canvas-wrapper">
                             <canvas id="statusChart"></canvas>
                         </div>
                     @else
@@ -258,7 +259,7 @@
             </div>
         </div>
 
-        <!-- ============ ROW 2: SALES BY CATEGORY + PAYMENT METHOD ============ -->
+        <!-- ============ ROW 2: SALES BY CATEGORY + WEEKLY SALES ============ -->
         <div class="analytics-row-2col">
             <!-- SALES BY CATEGORY -->
             <div class="chart-card">
@@ -268,7 +269,7 @@
                 </div>
                 <div class="chart-body">
                     @if(!empty($catValues) && array_sum($catValues) > 0)
-                        <div class="chart-canvas-wrapper donut-wrapper">
+                        <div class="chart-canvas-wrapper">
                             <canvas id="categoryChart"></canvas>
                         </div>
                     @else
@@ -281,23 +282,16 @@
                 </div>
             </div>
 
-            <!-- PAYMENT METHOD -->
+            <!-- DAILY SALES THIS WEEK -->
             <div class="chart-card">
                 <div class="chart-header">
-                    <h3><i class="fas fa-credit-card"></i> Payment Methods</h3>
-                    <span class="chart-badge">By Order Count</span>
+                    <h3><i class="fas fa-calendar-week"></i> This Week's Sales</h3>
+                    <span class="chart-badge">Daily</span>
                 </div>
                 <div class="chart-body">
-                    @if(!empty($paymentValues))
-                        <div class="chart-canvas-wrapper donut-wrapper">
-                            <canvas id="paymentChart"></canvas>
-                        </div>
-                    @else
-                        <div class="empty-state">
-                            <i class="fas fa-credit-card"></i>
-                            <p>No payment data</p>
-                        </div>
-                    @endif
+                    <div class="chart-canvas-wrapper">
+                        <canvas id="weeklyChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -322,39 +316,23 @@
             </div>
         </div>
 
-        <!-- ============ ROW 4: DAILY SALES + TOP CUSTOMERS ============ -->
-        <div class="analytics-row-2col">
-            <!-- DAILY SALES THIS WEEK -->
-            <div class="chart-card">
-                <div class="chart-header">
-                    <h3><i class="fas fa-calendar-week"></i> This Week's Sales</h3>
-                    <span class="chart-badge">Daily</span>
-                </div>
-                <div class="chart-body">
-                    <div class="chart-canvas-wrapper">
-                        <canvas id="weeklyChart"></canvas>
-                    </div>
-                </div>
+        <!-- ============ ROW 4: TOP CUSTOMERS (Full Width na para hindi blangko) ============ -->
+        <div class="chart-card full-width">
+            <div class="chart-header">
+                <h3><i class="fas fa-crown"></i> Top Customers</h3>
+                <span class="chart-badge">By Spending</span>
             </div>
-
-            <!-- TOP CUSTOMERS -->
-            <div class="chart-card">
-                <div class="chart-header">
-                    <h3><i class="fas fa-crown"></i> Top Customers</h3>
-                    <span class="chart-badge">By Spending</span>
-                </div>
-                <div class="chart-body">
-                    @if(!empty($customerNames))
-                        <div class="chart-canvas-wrapper">
-                            <canvas id="customerChart"></canvas>
-                        </div>
-                    @else
-                        <div class="empty-state">
-                            <i class="fas fa-crown"></i>
-                            <p>No customer data yet</p>
-                        </div>
-                    @endif
-                </div>
+            <div class="chart-body">
+                @if(!empty($customerNames))
+                    <div class="chart-canvas-wrapper">
+                        <canvas id="customerChart"></canvas>
+                    </div>
+                @else
+                    <div class="empty-state">
+                        <i class="fas fa-crown"></i>
+                        <p>No customer data yet</p>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -368,13 +346,13 @@
                 @if(!empty($productNames))
                     <div class="products-list">
                         @foreach($productNames as $index => $name)
-                            @php $width = $max_sold > 0 ? ($productSales[$index] / $max_sold) * 100 : 0; @endphp
+                            @php $width = $maxSold > 0 ? ($productSales[$index] / $maxSold) * 100 : 0; @endphp
                             <div class="product-list-item">
                                 <div class="product-rank">
-                                    @if($index == 0) <i class="fa-solid fa-medal"></i>
-                                    @elseif($index == 1) <i class="fa-solid fa-medal"></i>
-                                    @elseif($index == 2) <i class="fa-solid fa-medal"></i>
-                                    @else {{ $index + 1 }}th
+                                    @if($index <= 2)
+                                        <i class="fa-solid fa-medal"></i>
+                                    @else
+                                        {{ $index + 1 }}th
                                     @endif
                                 </div>
                                 <div class="product-name">{{ $name }}</div>
@@ -515,7 +493,7 @@
                         labels: @json($statusLabels),
                         datasets: [{
                             data: @json($statusValues),
-                            backgroundColor: @json(array_values($statusColors)),
+                            backgroundColor: @json($statusColors),
                             borderWidth: 2,
                             borderColor: '#fff'
                         }]
@@ -572,33 +550,40 @@
                 });
             }
 
-            // ========== 4. PAYMENT METHODS (Donut) ==========
-            const paymentCtx = document.getElementById('paymentChart');
-            if (paymentCtx) {
-                new Chart(paymentCtx, {
-                    type: 'doughnut',
+            // ========== 4. WEEKLY SALES (Bar) ==========
+            const weeklyCtx = document.getElementById('weeklyChart');
+            if (weeklyCtx) {
+                new Chart(weeklyCtx, {
+                    type: 'bar',
                     data: {
-                        labels: @json($paymentLabels),
+                        labels: @json(array_column($weeklyData, 'label')),
                         datasets: [{
-                            data: @json($paymentValues),
-                            backgroundColor: ['#576238', '#D4A054', '#7A8B4F', '#C5705A'],
-                            borderWidth: 2,
-                            borderColor: '#fff'
+                            label: 'Sales (₱)',
+                            data: @json(array_column($weeklyData, 'value')),
+                            backgroundColor: accentColor,
+                            borderRadius: 6,
+                            maxBarThickness: 50
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        cutout: '65%',
                         plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: { padding: 15, font: chartFont, boxWidth: 12 }
-                            },
+                            legend: { display: false },
                             tooltip: {
                                 ...tooltipStyle,
-                                callbacks: { label: ctx => ctx.label + ': ' + ctx.raw + ' orders' }
+                                callbacks: {
+                                    label: ctx => '₱' + parseFloat(ctx.raw).toLocaleString('en-PH', { minimumFractionDigits: 2 })
+                                }
                             }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { callback: v => '₱' + v.toLocaleString(), color: '#9E9D97', font: chartFont },
+                                grid: { color: '#F0EADC' }
+                            },
+                            x: { ticks: { color: '#9E9D97', font: chartFont }, grid: { display: false } }
                         }
                     }
                 });
@@ -650,46 +635,7 @@
                 });
             }
 
-            // ========== 6. WEEKLY SALES (Bar) ==========
-            const weeklyCtx = document.getElementById('weeklyChart');
-            if (weeklyCtx) {
-                new Chart(weeklyCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: @json(array_column($weeklyData, 'label')),
-                        datasets: [{
-                            label: 'Sales (₱)',
-                            data: @json(array_column($weeklyData, 'value')),
-                            backgroundColor: accentColor,
-                            borderRadius: 6,
-                            maxBarThickness: 50
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                ...tooltipStyle,
-                                callbacks: {
-                                    label: ctx => '₱' + parseFloat(ctx.raw).toLocaleString('en-PH', { minimumFractionDigits: 2 })
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: { callback: v => '₱' + v.toLocaleString(), color: '#9E9D97', font: chartFont },
-                                grid: { color: '#F0EADC' }
-                            },
-                            x: { ticks: { color: '#9E9D97', font: chartFont }, grid: { display: false } }
-                        }
-                    }
-                });
-            }
-
-            // ========== 7. TOP CUSTOMERS (Horizontal Bar) ==========
+            // ========== 6. TOP CUSTOMERS (Horizontal Bar) ==========
             const customerCtx = document.getElementById('customerChart');
             if (customerCtx) {
                 new Chart(customerCtx, {
@@ -736,6 +682,29 @@
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
+        }
+
+        /* ============ PAGE HEADER ============ */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .page-header-left h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2C2B26;
+            margin: 0 0 0.25rem 0;
+        }
+
+        .page-description {
+            font-size: 0.8rem;
+            color: #9E9D97;
+            margin: 0;
         }
 
         /* ============ SUMMARY CARDS ============ */
@@ -859,10 +828,6 @@
             width: 100%;
         }
 
-        .chart-canvas-wrapper.donut-wrapper {
-            height: 280px;
-        }
-
         .chart-canvas-wrapper.tall-wrapper {
             height: 320px;
         }
@@ -959,6 +924,7 @@
         .data-table {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
         }
 
         .data-table th,
@@ -966,6 +932,9 @@
             padding: 0.875rem 1rem;
             text-align: left;
             border-bottom: 1px solid #F0EADC;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .data-table th {

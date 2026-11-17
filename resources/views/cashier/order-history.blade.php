@@ -170,10 +170,9 @@
                             <th class="col-order-no">Order No.</th>
                             <th class="col-customer">Customer</th>
                             <th class="col-amount">Total Amount</th>
-                            <th class="col-type">Type</th>
-                            <th class="col-status">Status</th>
-                            <th class="col-date">Date</th>
-                            <th class="col-actions">Action</th>
+                            <th class="col-type text-center">Type</th>
+                            <th class="col-status text-center">Status</th>
+                            <th class="col-date text-center">Date</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -181,75 +180,51 @@
                             @foreach($orders as $o)
                                 <tr>
                                     <td class="col-order-no">
-                                        <span class="order-number">#{{ str_pad($o->id, 6, '0', STR_PAD_LEFT) }}</span>
+                                        <a href="{{ route('orders.show', $o->id) }}" class="order-number">
+                                            #{{ str_pad($o->id, 6, '0', STR_PAD_LEFT) }}
+                                        </a>
                                     </td>
                                     <td class="col-customer">
-                                        <div class="customer-info">
-                                            <div class="customer-avatar">
-                                                {{ strtoupper(substr($o->customer_name ?? 'U', 0, 1)) }}
+                                        <a href="{{ route('orders.show', $o->id) }}" class="customer-link">
+                                            <div class="customer-info">
+                                                <div class="customer-avatar">
+                                                    {{ strtoupper(substr($o->customer_name ?? 'U', 0, 1)) }}
+                                                </div>
+                                                <div class="customer-text">
+                                                    <span class="customer-name">{{ ucwords(strtolower($o->customer_name)) }}</span>
+                                                    @if(!empty($o->contact_number))
+                                                        <small class="customer-contact">{{ $o->contact_number }}</small>
+                                                    @endif
+                                                </div>
                                             </div>
-                                            <div class="customer-text">
-                                                <span class="customer-name">{{ ucwords(strtolower($o->customer_name)) }}</span>
-                                                @if(!empty($o->contact_number))
-                                                    <small class="customer-contact">{{ $o->contact_number }}</small>
-                                                @endif
-                                            </div>
-                                        </div>
+                                        </a>
                                     </td>
                                     <td class="col-amount">
                                         <span class="amount-value">₱{{ number_format($o->total_amount, 2) }}</span>
                                     </td>
-                                    <td class="col-type">
+                                    <td class="col-type text-center">
                                         <span class="type-badge type-{{ $o->order_type ?? 'pickup' }}">
                                             <i
                                                 class="fas {{ ($o->order_type ?? 'pickup') == 'pickup' ? 'fa-store' : 'fa-truck' }}"></i>
                                             {{ ($o->order_type ?? 'pickup') == 'pickup' ? 'Pick-up' : 'Delivery' }}
                                         </span>
                                     </td>
-                                    <td class="col-status">
+                                    <td class="col-status text-center">
                                         <span class="status-badge status-{{ $o->status }}">
                                             <i
                                                 class="fas {{ $o->status == 'pending' ? 'fa-clock' : ($o->status == 'completed' ? 'fa-check-circle' : 'fa-times-circle') }}"></i>
                                             {{ ucfirst($o->status) }}
                                         </span>
                                     </td>
-                                    <td class="col-date">
+                                    <td class="col-date text-center">
                                         <span class="date-primary">{{ $o->order_date->format('M d, Y') }}</span>
                                         <span class="date-time">{{ $o->order_date->format('h:i A') }}</span>
-                                    </td>
-                                    <td class="col-actions">
-                                        <div class="action-group">
-                                            <a href="{{ route('orders.show', $o->id) }}" class="action-btn action-view"
-                                                title="View">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-
-                                            @if($o->status === 'pending')
-                                                <form method="POST" action="{{ route('orders.complete', $o->id) }}" class="action-form">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <button type="submit" class="action-btn action-complete" title="Mark as Complete"
-                                                        onclick="return confirm('Mark order #{{ $o->id }} as COMPLETED?')">
-                                                        <i class="fas fa-check"></i>
-                                                    </button>
-                                                </form>
-
-                                                <form method="POST" action="{{ route('orders.cancel', $o->id) }}" class="action-form">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <button type="submit" class="action-btn action-cancel" title="Cancel Order"
-                                                        onclick="return confirm('Cancel order #{{ $o->id }}? Stock will be restored.')">
-                                                        <i class="fas fa-times"></i>
-                                                    </button>
-                                                </form>
-                                            @endif
-                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
                         @else
                             <tr class="empty-row">
-                                <td colspan="7">
+                                <td colspan="6">
                                     <div class="empty-state">
                                         <div class="empty-icon">
                                             <i class="fas fa-inbox"></i>
@@ -406,7 +381,6 @@
 
         .today-stats strong {
             font-size: 1.25rem;
-            font-family: 'Playfair Display', serif;
         }
 
         .divider-dot {
@@ -505,10 +479,6 @@
 
         .stat-mini-card.stat-completed .stat-mini-icon {
             background: #E8F0E3;
-        }
-
-        .stat-mini-card.stat-completed .stat-mini-icon i {
-            color: #576238;
         }
 
         .stat-mini-card.stat-pending .stat-mini-icon {
@@ -777,7 +747,9 @@
             color: white;
         }
 
-        /* TABLE */
+        /* ============================================ */
+        /* TABLE & ALIGNMENTS (Dito ang inayos natin)   */
+        /* ============================================ */
         .table-wrapper {
             overflow-x: auto;
         }
@@ -788,6 +760,7 @@
             font-family: 'Inter', sans-serif;
             font-size: 0.8125rem;
             line-height: 1.5;
+            table-layout: fixed;
         }
 
         .data-table thead tr {
@@ -804,6 +777,13 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             white-space: nowrap;
+        }
+
+        /* Dito natin nilagyan ng text-align: center ang mga columns */
+        .data-table th.text-center,
+        .data-table td.text-center {
+            text-align: center !important;
+            justify-content: center;
         }
 
         .data-table td {
@@ -826,36 +806,29 @@
             border-bottom: none;
         }
 
+        /* ✅ Responsive Column Widths */
         .col-order-no {
-            width: 110px;
+            width: 14%;
         }
 
         .col-customer {
-            width: auto;
-            min-width: 200px;
+            width: 30%;
         }
 
         .col-amount {
-            width: 130px;
+            width: 14%;
         }
 
         .col-type {
-            width: 130px;
-            white-space: nowrap;
+            width: 14%;
         }
 
         .col-status {
-            width: 120px;
-            white-space: nowrap;
+            width: 14%;
         }
 
         .col-date {
-            width: 130px;
-        }
-
-        .col-actions {
-            width: 130px;
-            text-align: center;
+            width: 14%;
         }
 
         .order-number {
@@ -867,9 +840,32 @@
             padding: 0.3rem 0.6rem;
             border-radius: 0.375rem;
             display: inline-block;
+            text-decoration: none;
+            transition: all 0.2s ease;
         }
 
-        /* Customer cell */
+        .order-number:hover {
+            background: #576238;
+            color: white;
+        }
+
+        .customer-link {
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            align-items: center;
+            transition: opacity 0.2s ease;
+        }
+
+        .customer-link:hover {
+            opacity: 0.7;
+        }
+
+        .customer-link:hover .customer-name {
+            color: #576238;
+            text-decoration: underline;
+        }
+
         .customer-info {
             display: flex;
             align-items: center;
@@ -914,11 +910,12 @@
             font-size: 0.9rem;
         }
 
-        /* Type & Status badges */
+        /* ✅ Inayos para mag-center ang badges at date */
         .type-badge,
         .status-badge {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 0.35rem;
             padding: 0.3rem 0.7rem;
             border-radius: 2rem;
@@ -926,6 +923,8 @@
             font-weight: 600;
             white-space: nowrap;
             flex-shrink: 0;
+            min-width: 100px;
+            /* Para pantay-pantay haba */
         }
 
         .type-badge {
@@ -964,74 +963,6 @@
             font-size: 0.68rem;
             color: #9E9D97;
             margin-top: 0.1rem;
-        }
-
-        /* Action buttons */
-        .action-group {
-            display: flex;
-            gap: 0.375rem;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .action-form {
-            display: inline;
-            margin: 0;
-        }
-
-        .action-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 32px;
-            height: 32px;
-            border-radius: 0.375rem;
-            font-size: 0.75rem;
-            text-decoration: none;
-            transition: all 0.2s ease;
-            border: 1px solid transparent;
-            cursor: pointer;
-            background: transparent;
-            padding: 0;
-        }
-
-        .action-view {
-            background: #F0EADC;
-            color: #576238;
-            border-color: #E3DCD0;
-        }
-
-        .action-view:hover {
-            background: #576238;
-            color: white;
-            border-color: #576238;
-            transform: translateY(-1px);
-        }
-
-        .action-complete {
-            background: #E8F0E3;
-            color: #576238;
-            border-color: #C5D4A8;
-        }
-
-        .action-complete:hover {
-            background: #576238;
-            color: white;
-            border-color: #576238;
-            transform: translateY(-1px);
-        }
-
-        .action-cancel {
-            background: #FEF0ED;
-            color: #C5705A;
-            border-color: #E8C5BD;
-        }
-
-        .action-cancel:hover {
-            background: #C5705A;
-            color: white;
-            border-color: #C5705A;
-            transform: translateY(-1px);
         }
 
         /* Empty state */
@@ -1129,6 +1060,7 @@
             font-weight: 600;
         }
 
+        /* ✅ Responsive Adjustments */
         @media (max-width: 768px) {
             .today-banner {
                 flex-direction: column;
@@ -1136,13 +1068,20 @@
             }
 
             .search-wrapper input {
-                width: 200px;
+                width: 100%;
             }
 
             .data-table th,
             .data-table td {
-                padding: 0.75rem 0.75rem;
+                padding: 0.75rem 0.5rem;
                 font-size: 0.75rem;
+            }
+
+            .type-badge,
+            .status-badge {
+                min-width: 80px;
+                font-size: 0.65rem;
+                padding: 0.25rem 0.5rem;
             }
         }
     </style>

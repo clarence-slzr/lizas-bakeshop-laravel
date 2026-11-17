@@ -65,8 +65,9 @@
                                 <span>Inventory</span>
                             </a>
 
+                            {{-- ✅ INAYOS: Kasama na ang orders.show para hindi mawala ang highlight --}}
                             <a href="{{ route('orders.index') }}"
-                                class="nav-item {{ request()->routeIs('orders.index') ? 'active' : '' }}">
+                                class="nav-item {{ request()->routeIs('orders.index') || request()->routeIs('orders.show') ? 'active' : '' }}">
                                 <i class="fas fa-receipt"></i>
                                 <span>Orders</span>
                             </a>
@@ -109,8 +110,9 @@
                         <div class="nav-section">
                             <span class="nav-section-title">Transactions</span>
 
+                            {{-- ✅ INAYOS: Kasama na ang orders.show para hindi mawala ang highlight --}}
                             <a href="{{ route('cashier.order-history') }}"
-                                class="nav-item {{ request()->routeIs('cashier.order-history') ? 'active' : '' }}">
+                                class="nav-item {{ request()->routeIs('cashier.order-history') || request()->routeIs('orders.show') ? 'active' : '' }}">
                                 <i class="fas fa-clock-rotate-left"></i>
                                 <span>Order History</span>
                             </a>

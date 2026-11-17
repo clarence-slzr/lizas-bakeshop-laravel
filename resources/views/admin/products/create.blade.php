@@ -2,6 +2,7 @@
 
 @section('content')
     @php
+        // Itago yung default page title kasi may sarili tayong header sa baba
         $page_title = 'Add New Product';
         $hide_page_title = true;
     @endphp
@@ -9,6 +10,7 @@
     <div class="form-container">
         <div class="form-header">
             <div class="form-header-left">
+                {{-- Link pabalik sa listahan ng products --}}
                 <a href="{{ route('admin.products.index') }}" class="back-link">
                     <i class="fas fa-arrow-left"></i> Back to Products
                 </a>
@@ -17,6 +19,7 @@
             </div>
         </div>
 
+        {{-- Ipakita yung mga errors kung may maling na-input --}}
         @if($errors->any())
             <div class="alert alert-error">
                 <i class="fas fa-exclamation-circle"></i>
@@ -31,6 +34,8 @@
         <form action="{{ route('admin.products.store') }}" method="POST" class="product-form" enctype="multipart/form-data">
             @csrf
             <div class="form-grid">
+
+                {{-- SECTION 1: Basic Info --}}
                 <div class="form-section">
                     <h3 class="section-title">Basic Information</h3>
 
@@ -51,6 +56,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="price">Price <span class="required">*</span></label>
+                            {{-- Peso sign icon na nakalagay sa loob ng input field --}}
                             <div style="position: relative; display: flex; align-items: center;">
                                 <span
                                     style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #9E9D97; font-size: 0.875rem; pointer-events: none; z-index: 2;">₱</span>
@@ -89,26 +95,31 @@
                     </div>
                 </div>
 
+                {{-- SECTION 2: Availability Settings --}}
                 <div class="form-section">
                     <h3 class="section-title">Availability Settings</h3>
 
+                    {{-- Toggle para sa "Available" status --}}
                     <div class="toggle-row">
                         <div class="toggle-info">
                             <strong>Available for purchase</strong>
                             <small>When unchecked, this product will be hidden from POS</small>
                         </div>
                         <label class="toggle-switch">
+                            {{-- Checked by default para madaling i-save --}}
                             <input type="checkbox" name="is_available" value="1" checked>
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
 
+                    {{-- Toggle para sa "Best Seller" status --}}
                     <div class="toggle-row">
                         <div class="toggle-info">
                             <strong>Mark as Best Seller</strong>
                             <small>Best sellers are featured on the landing page</small>
                         </div>
                         <label class="toggle-switch">
+                            {{-- I-retain yung checked state kung may old input --}}
                             <input type="checkbox" name="is_best_seller" value="1" {{ old('is_best_seller') ? 'checked' : '' }}>
                             <span class="toggle-slider"></span>
                         </label>
@@ -124,6 +135,7 @@
                 </div>
             </div>
 
+            {{-- Form Buttons --}}
             <div class="form-actions">
                 <button type="submit" class="btn-primary">
                     <i class="fas fa-save"></i> Save Product
@@ -136,6 +148,7 @@
     </div>
 
     <style>
+        /* Dito naka-center yung buong form at may max-width */
         .form-container {
             max-width: 800px;
             margin: 0 auto;
@@ -153,6 +166,7 @@
             flex: 1;
         }
 
+        /* Design ng "Back" link */
         .back-link {
             display: inline-flex;
             align-items: center;
@@ -182,6 +196,7 @@
             font-size: 0.85rem;
         }
 
+        /* Red alert box para sa errors */
         .alert {
             display: flex;
             align-items: center;
@@ -197,6 +212,7 @@
             color: #C5705A;
         }
 
+        /* Puting background ng form */
         .product-form {
             background: white;
             border: 1px solid #E3DCD0;
@@ -204,6 +220,7 @@
             overflow: hidden;
         }
 
+        /* Spacing ng bawat field */
         .form-grid {
             padding: 1.5rem;
             display: flex;
@@ -231,6 +248,7 @@
             display: inline-block;
         }
 
+        /* Para sa Price at Stock side-by-side */
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -264,6 +282,7 @@
             margin-left: 0.25rem;
         }
 
+        /* Design ng lahat ng inputs */
         .form-group input[type="text"],
         .form-group input[type="number"],
         .form-group select,
@@ -279,6 +298,7 @@
             resize: vertical;
         }
 
+        /* Highlight kapag clinick yung input */
         .form-group input:focus,
         .form-group select:focus,
         .form-group textarea:focus {
@@ -295,6 +315,7 @@
             line-height: 1.4;
         }
 
+        /* Toggle switches layout */
         .toggle-row {
             display: flex;
             justify-content: space-between;
@@ -327,6 +348,7 @@
             font-weight: normal;
         }
 
+        /* Yung mismong switch button */
         .toggle-switch {
             position: relative;
             display: inline-block;
@@ -336,12 +358,14 @@
             cursor: pointer;
         }
 
+        /* Itago yung default checkbox */
         .toggle-switch input {
             opacity: 0;
             width: 0;
             height: 0;
         }
 
+        /* Yung background ng switch */
         .toggle-slider {
             position: absolute;
             cursor: pointer;
@@ -354,6 +378,7 @@
             border-radius: 24px;
         }
 
+        /* Yung bilog sa loob ng switch */
         .toggle-slider:before {
             position: absolute;
             content: "";
@@ -367,10 +392,12 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
         }
 
+        /* Kulay kapag naka-ON */
         .toggle-switch input:checked+.toggle-slider {
             background-color: #576238;
         }
 
+        /* Pag-galaw ng bilog papuntang kanan kapag ON */
         .toggle-switch input:checked+.toggle-slider:before {
             transform: translateX(20px);
         }
@@ -379,6 +406,7 @@
             box-shadow: 0 0 0 3px rgba(87, 98, 56, 0.2);
         }
 
+        /* Yellowish box para sa note */
         .info-box {
             background: #FDF8F0;
             border: 1px solid #E3DCD0;
@@ -406,6 +434,7 @@
             color: #2C2B26;
         }
 
+        /* Footer kung saan nandun yung buttons */
         .form-actions {
             background: #FDF8F0;
             padding: 1rem 1.5rem;

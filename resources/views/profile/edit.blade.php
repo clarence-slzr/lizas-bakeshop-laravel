@@ -3,6 +3,28 @@
 @section('content')
     <div class="profile-container">
 
+        {{-- ============================================ --}}
+        {{-- SUCCESS POPUP ALERT --}}
+        {{-- ============================================ --}}
+        @if(session('status') === 'profile-updated' || session('status') === 'password-updated')
+            <div class="success-alert" id="successAlert">
+                <div class="alert-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="alert-content">
+                    <strong>Success!</strong>
+                    @if(session('status') === 'password-updated')
+                        Your password has been updated successfully.
+                    @else
+                        Your profile has been saved successfully.
+                    @endif
+                </div>
+                <button type="button" class="alert-close" onclick="document.getElementById('successAlert').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        @endif
+
         {{-- HEADER CARD --}}
         <div class="profile-header-card">
             <div class="profile-avatar-wrapper">
@@ -82,6 +104,26 @@
         </div>
     </div>
 
+    {{-- ============================================ --}}
+    {{-- SCRIPT PARA SA AUTO-HIDE POPUP --}}
+    {{-- ============================================ --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const alert = document.getElementById('successAlert');
+            if (alert) {
+                // Mag-hide pagkalipas ng 3.5 seconds
+                setTimeout(function () {
+                    alert.style.transition = 'all 0.4s ease';
+                    alert.style.opacity = '0';
+                    alert.style.transform = 'translateY(-20px)';
+                    setTimeout(function () {
+                        alert.remove();
+                    }, 400);
+                }, 3500);
+            }
+        });
+    </script>
+
     <style>
         .profile-container {
             max-width: 900px;
@@ -92,6 +134,77 @@
             padding: 1.5rem;
         }
 
+        /* ============ SUCCESS POPUP ============ */
+        .success-alert {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: white;
+            border: 1px solid #C5D4A8;
+            border-left: 5px solid #576238;
+            border-radius: 0.75rem;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 10px 30px rgba(87, 98, 56, 0.15);
+            z-index: 9999;
+            animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .alert-icon {
+            width: 36px;
+            height: 36px;
+            background: #E8F0E3;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            color: #576238;
+            flex-shrink: 0;
+        }
+
+        .alert-content {
+            font-size: 0.85rem;
+            color: #2C2B26;
+            line-height: 1.4;
+        }
+
+        .alert-content strong {
+            color: #576238;
+            display: block;
+            margin-bottom: 0.15rem;
+            font-size: 0.9rem;
+        }
+
+        .alert-close {
+            background: transparent;
+            border: none;
+            color: #9E9D97;
+            cursor: pointer;
+            padding: 0.25rem;
+            margin-left: 0.5rem;
+            transition: color 0.2s;
+        }
+
+        .alert-close:hover {
+            color: #C5705A;
+        }
+
+        /* ============ HEADER CARD ============ */
         .profile-header-card {
             background: white;
             border: 1px solid #E3DCD0;
@@ -169,6 +282,7 @@
             margin-right: 0.3rem;
         }
 
+        /* ============ CARDS ============ */
         .profile-card {
             background: white;
             border: 1px solid #E3DCD0;
@@ -194,6 +308,7 @@
             margin-right: 0.5rem;
         }
 
+        /* ============ ACTIVITY GRID ============ */
         .activity-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -253,11 +368,11 @@
             color: #2C2B26;
         }
 
+        /* ============ FORM STYLING ============ */
         .profile-form {
             padding: 1.5rem;
         }
 
-        /* ============ IMPROVED FORM STYLING ============ */
         .profile-form form {
             display: flex;
             flex-direction: column;
@@ -316,7 +431,6 @@
             color: #B8B7B0;
         }
 
-        /* Small helper text */
         .profile-form small,
         .profile-form .form-hint {
             display: block;
@@ -325,7 +439,6 @@
             margin-top: 0.35rem;
         }
 
-        /* Success / Error messages */
         .profile-form .alert,
         .profile-form .text-green-600,
         .profile-form .text-red-600 {
@@ -333,7 +446,6 @@
             margin-top: 0.5rem;
         }
 
-        /* Submit button */
         .profile-form button[type="submit"],
         .profile-form .btn-primary {
             display: inline-flex;
@@ -358,7 +470,6 @@
             box-shadow: 0 4px 12px rgba(87, 98, 56, 0.3);
         }
 
-        /* Danger button (delete) */
         .profile-form .btn-danger,
         .profile-form button[type="submit"].danger {
             background: linear-gradient(135deg, #E8A594, #C5705A);
@@ -369,20 +480,17 @@
             box-shadow: 0 4px 12px rgba(197, 112, 90, 0.3);
         }
 
-        /* Checkbox / Radio in forms */
         .profile-form input[type="checkbox"],
         .profile-form input[type="radio"] {
             width: auto;
             margin-right: 0.5rem;
         }
 
-        /* Disabled inputs */
         .profile-form input:disabled {
             background: #F0EADC;
             cursor: not-allowed;
         }
 
-        /* Form row (two columns) */
         .profile-form .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
